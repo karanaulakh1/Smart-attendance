@@ -1,11 +1,11 @@
 <?php
 
 
-$host = getenv("mysql.railway.internal");     
+$host = getenv("zephyr.proxy.rlwy.net");     
 $user = getenv("root");          
 $password = getenv("ghqjoJkRJyQkpxFDFnxlImvcemmUveKg");         
 $dbname = getenv("attendance_system");  
-$port = getenv("3306");
+$port = getenv("36443");
 // Create connection
 $conn = new mysqli($host, $user, $password, $dbname, $port);
 
