@@ -1,12 +1,13 @@
 <?php
 
-$host = "localhost";      // Server (always localhost in XAMPP)
-$user = "root";           // Default username
-$password = "";           // Default password (empty in XAMPP)
-$dbname = "attendance_system";  // Your database name
 
+$host = getenv("mysql.railway.internal");     
+$user = getenv("root");          
+$password = getenv("ghqjoJkRJyQkpxFDFnxlImvcemmUveKg");         
+$dbname = getenv("attendance_system");  
+$port = getenv("3306");
 // Create connection
-$conn = new mysqli($host, $user, $password, $dbname);
+$conn = new mysqli($host, $user, $password, $dbname, $port);
 
 // Check connection
 if ($conn->connect_error) {

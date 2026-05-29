@@ -1,6 +1,6 @@
 <?php
 
-$conn = mysqli_connect("localhost","root","","attendance_system");
+$conn = mysqli_connect("mysql.railway.internal","root","","attendance_system");
 
 if(!$conn){
     die("Connection Failed");
