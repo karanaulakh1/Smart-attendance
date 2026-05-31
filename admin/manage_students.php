@@ -700,7 +700,6 @@ tbody tr td:last-child{
 <a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
 
 </div>
-</div>
 
 <!-- MAIN -->
 

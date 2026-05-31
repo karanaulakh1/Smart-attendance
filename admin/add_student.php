@@ -409,8 +409,6 @@ body{
 
 </div>
 
-</div>
-
 <!-- MAIN -->
 
 <div class="main">
