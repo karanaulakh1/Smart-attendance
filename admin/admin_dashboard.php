@@ -475,6 +475,10 @@ window.location="logout.php";
 }
 }
 </script>
-
+<script>
+function toggleSidebar(){
+    document.getElementById("sidebar").classList.toggle("active");
+}
+</script>
 </body>
 </html>

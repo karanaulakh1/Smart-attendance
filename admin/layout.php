@@ -170,5 +170,10 @@ if(!isset($_SESSION['admin'])){
 <!-- Content Start -->
 <div class="content">
 </div>
+<script>
+function toggleSidebar(){
+    document.getElementById("sidebar").classList.toggle("active");
+}
+</script>
 </body>
 </html>

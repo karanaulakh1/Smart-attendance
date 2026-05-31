@@ -16,7 +16,7 @@ if(isset($_POST['add_admin'])){
     $role = $_POST['role'];
 
     $conn->query("
-        INSERT INTO admin (username, email, password, role)
+        INSERT INTO admin (username, email, password, eolr)
         VALUES ('$username', '$email', '$password', '$role')
     ");
 
@@ -48,7 +48,16 @@ $admins = $conn->query("SELECT * FROM admin");
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* MOBILE TOPBAR */
+
+/* BASE */
+body{
+    margin:0;
+    font-family:Poppins;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    color:white;
+}
+
+/* TOP MOBILE BAR */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
@@ -68,45 +77,41 @@ $admins = $conn->query("SELECT * FROM admin");
     cursor:pointer;
 }
 
-/* SIDEBAR ANIMATION */
+/* SIDEBAR */
 .sidebar{
-    transition:0.3s ease;
-}
-
-/* MOBILE */
-@media(max-width:700px){
-
-.topbar-mobile{
-    display:flex;
-}
-
-.sidebar{
+    width:260px;
+    min-height:100vh;
     position:fixed;
-    left:-260px;
     top:0;
-    height:100%;
-    z-index:999;
-}
-
-.sidebar.active{
     left:0;
+    background:rgba(15,23,42,0.95);
+    padding:25px;
+    transition:0.3s;
 }
 
-.main{
-    margin-left:0;
+.sidebar .logo{
+    font-size:26px;
+    font-weight:700;
+    margin-bottom:40px;
 }
-}
-body{
-    margin:0;
-    font-family:Poppins;
-    background:linear-gradient(135deg,#0f172a,#1e293b);
+
+.sidebar a{
+    display:block;
     color:white;
+    text-decoration:none;
+    padding:14px;
+    border-radius:10px;
+    margin-bottom:8px;
 }
 
-/* CONTAINER */
+.sidebar a:hover{
+    background:#2563eb;
+}
+
+/* MAIN */
 .container{
-    padding:30px;
     margin-left:260px;
+    padding:30px;
 }
 
 /* FORM */
@@ -153,8 +158,6 @@ th{
     background:#334155;
 }
 
-
-/* DELETE */
 .delete{
     color:#ef4444;
     text-decoration:none;
@@ -162,22 +165,58 @@ th{
 
 /* MOBILE */
 @media(max-width:700px){
-    .container{
-        margin-left:0;
-        padding:15px;
-    }
+
+.topbar-mobile{
+    display:flex;
+}
+
+.sidebar{
+    left:-260px;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.container{
+    margin-left:0;
+    padding:15px;
+}
 }
 
 </style>
+
 </head>
 
 <body>
 
+<!-- MOBILE TOP BAR -->
+<div class="topbar-mobile">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div>Admin Management</div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+
+<div class="logo">📘 Smart<br>Attendance</div>
+
+<a href="admin_dashboard.php">🏠 Dashboard</a>
+<a href="add_student.php">➕ Add Student</a>
+<a href="manage_students.php">👨‍🎓 Manage Students</a>
+<a href="attendance.php">🗓️ Attendance</a>
+<a href="admin_management.php">👮 Admin Management</a>
+
+<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
+
+</div>
+
+<!-- MAIN -->
 <div class="container">
 
 <h2>👮 Admin Management</h2>
 
-<!-- ADD ADMIN FORM -->
+<!-- ADD ADMIN -->
 <div class="form-box">
 
 <h3>Add New Admin</h3>
@@ -201,32 +240,32 @@ th{
 
 </div>
 
-<!-- ADMIN TABLE -->
+<!-- TABLE -->
 <table>
 
 <tr>
-    <th>ID</th>
-    <th>Username</th>
-    <th>Email</th>
-    <th>Password</th>
-    <th>Role</th>
-    <th>Action</th>
+<th>ID</th>
+<th>Username</th>
+<th>Email</th>
+<th>Password</th>
+<th>Role</th>
+<th>Action</th>
 </tr>
 
 <?php while($row=$admins->fetch_assoc()){ ?>
 
 <tr>
-    <td><?php echo $row['id']; ?></td>
-    <td><?php echo $row['username']; ?></td>
-    <td><?php echo $row['email']; ?></td>
-    <td><?php echo $row['password']; ?></td>
-    <td><?php echo $row['role']; ?></td>
-    <td>
-        <a class="delete" href="?delete=<?php echo $row['id']; ?>"
-        onclick="return confirm('Delete this admin?')">
-        Delete
-        </a>
-    </td>
+<td><?php echo $row['id']; ?></td>
+<td><?php echo $row['username']; ?></td>
+<td><?php echo $row['email']; ?></td>
+<td><?php echo $row['password']; ?></td>
+<td><?php echo $row['eolr']; ?></td>
+<td>
+<a class="delete" href="?delete=<?php echo $row['id']; ?>"
+onclick="return confirm('Delete admin?')">
+Delete
+</a>
+</td>
 </tr>
 
 <?php } ?>
@@ -234,6 +273,13 @@ th{
 </table>
 
 </div>
+
+<!-- JS -->
+<script>
+function toggleSidebar(){
+    document.getElementById("sidebar").classList.toggle("active");
+}
+</script>
 
 </body>
 </html>
