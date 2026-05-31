@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Asia/Kolkata');
+
 $host = "gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com";
 $user = "JmzF5kyqRvEwnxn.root";
 $pass = "nRavqZA6tYW3LGNf";
