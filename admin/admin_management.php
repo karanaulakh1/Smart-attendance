@@ -52,7 +52,7 @@ $admins = $conn->query("SELECT * FROM admin");
 body{
     margin:0;
     font-family:Poppins;
-    background:linear-gradient(135deg,#0f172a,#1e293b);
+    background:#0f172a;
     color:white;
     overflow-x:hidden;
 }
@@ -66,25 +66,17 @@ body{
     background:#0f172a;
     position:sticky;
     top:0;
-    z-index:3000;
+    z-index:4000;
 }
 
-.hamburger{
-    font-size:26px;
-    background:none;
-    border:none;
-    color:white;
-    cursor:pointer;
-}
-
-/* ================= SIDEBAR (DESKTOP FIXED) ================= */
+/* ================= SIDEBAR ================= */
 .sidebar{
     width:260px;
     height:100vh;
     position:fixed;
     top:0;
     left:0;
-    background:#1e293b; /* BRIGHT FIX */
+    background:#1e293b;
     padding:25px;
     z-index:1000;
 }
@@ -108,17 +100,13 @@ body{
     background:#2563eb;
 }
 
-/* ================= MAIN CONTENT ================= */
+/* ================= MAIN LAYOUT ================= */
 .container{
     margin-left:260px;
+    width:calc(100% - 260px);
     padding:30px;
     position:relative;
     z-index:1;
-}
-
-/* ================= OVERLAY ================= */
-.overlay{
-    display:none;
 }
 
 /* ================= FORM ================= */
@@ -170,12 +158,6 @@ th{
     text-decoration:none;
 }
 
-/* ================= DESKTOP FIX ================= */
-h2, .topbar-mobile{
-    position:relative;
-    z-index:2;
-}
-
 /* ================= MOBILE ================= */
 @media(max-width:700px){
 
@@ -183,45 +165,52 @@ h2, .topbar-mobile{
     display:flex;
 }
 
-/* container reset */
+/* FULL WIDTH MAIN */
 .container{
     margin-left:0;
+    width:100%;
     padding:15px;
 }
 
-/* overlay */
+/* OVERLAY */
 .overlay{
     position:fixed;
     top:0;
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.5);
+    background:rgba(0,0,0,0.6);
     z-index:2500;
+    display:none;
 }
 
 .overlay.active{
     display:block;
 }
 
-/* POP OUT SIDEBAR (BRIGHT FIX) */
+/* CLEAN POPUP (NO SCALE BUG, NO COLOR LINE) */
 .sidebar{
-    left:50%;
+    position:fixed;
     top:50%;
-    transform:translate(-50%,-50%) scale(0.85);
-    opacity:0;
+    left:50%;
+    transform:translate(-50%,-50%);
     width:90%;
-    height:auto;
+    max-width:320px;
+
+    background:#1e293b;
     border-radius:18px;
-    background:#1e293b; /* BRIGHT */
-    box-shadow:0 20px 50px rgba(0,0,0,0.4);
-    transition:0.25s ease;
+
+    opacity:0;
+    visibility:hidden;
+
+    transition:0.2s ease;
     z-index:3000;
 }
 
+/* ACTIVE */
 .sidebar.active{
-    transform:translate(-50%,-50%) scale(1);
     opacity:1;
+    visibility:visible;
 }
 
 }
@@ -234,7 +223,7 @@ h2, .topbar-mobile{
 
 <!-- MOBILE TOP BAR -->
 <div class="topbar-mobile">
-    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <button onclick="toggleSidebar()" style="font-size:26px;background:none;border:none;color:white;">☰</button>
     <div>Admin Management</div>
 </div>
 
@@ -326,27 +315,6 @@ function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
 }
-
-document.addEventListener("click", function(e){
-
-    let sidebar = document.getElementById("sidebar");
-    let button = document.querySelector(".hamburger");
-
-    if(window.innerWidth <= 700){
-        if(!sidebar.contains(e.target) && !button.contains(e.target)){
-            sidebar.classList.remove("active");
-            document.getElementById("overlay").classList.remove("active");
-        }
-    }
-
-});
-
-window.addEventListener("resize", function(){
-    if(window.innerWidth > 700){
-        document.getElementById("sidebar").classList.remove("active");
-        document.getElementById("overlay").classList.remove("active");
-    }
-});
 
 </script>
 
