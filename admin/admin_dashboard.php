@@ -7,17 +7,16 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-/* ROLE FROM SESSION */
-$admin_role = $_SESSION['role']; // IMPORTANT
+$admin_role = $_SESSION['role'];
 
 date_default_timezone_set("Asia/Kolkata");
 
 $today = date("Y-m-d");
 
-/* TOTAL STUDENTS */
+/* TOTAL */
 $total_students = $conn->query("SELECT * FROM students")->num_rows;
 
-/* PRESENT TODAY */
+/* PRESENT */
 $present_today = $conn->query("
 SELECT * FROM attendance
 WHERE date='$today' AND status='Present'
@@ -26,14 +25,14 @@ WHERE date='$today' AND status='Present'
 /* ABSENT */
 $absent_today = $total_students - $present_today;
 
-/* ATTENDANCE % */
+/* RATE */
 $attendance_percentage = ($total_students > 0)
     ? round(($present_today / $total_students) * 100)
     : 0;
 
-/* RECENT */
+/* RECENT ATTENDANCE */
 $recent = $conn->query("
-SELECT attendance.*, students.name
+SELECT attendance.student_id, attendance.status, attendance.date, attendance.time, students.name
 FROM attendance
 LEFT JOIN students
 ON attendance.student_id = students.student_id
@@ -70,10 +69,8 @@ for($i=6;$i>=0;$i--){
 
 <style>
 
-/* ================= GLOBAL ================= */
-*{
-    box-sizing:border-box;
-}
+/* GLOBAL */
+*{box-sizing:border-box;}
 
 body{
     margin:0;
@@ -83,7 +80,7 @@ body{
     overflow-x:hidden;
 }
 
-/* ================= TOPBAR ================= */
+/* TOPBAR */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
@@ -102,7 +99,7 @@ body{
     color:white;
 }
 
-/* ================= SIDEBAR ================= */
+/* SIDEBAR DESKTOP */
 .sidebar{
     width:260px;
     height:100vh;
@@ -133,20 +130,20 @@ body{
     background:#2563eb;
 }
 
-/* ================= MAIN ================= */
+/* MAIN */
 .main{
     margin-left:260px;
     padding:30px;
 }
 
-/* ================= TOP BAR ================= */
+/* TOP BAR */
 .top-bar{
     display:flex;
     justify-content:space-between;
     margin-bottom:25px;
 }
 
-/* ================= STATS ================= */
+/* STATS */
 .stats{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -174,7 +171,7 @@ body{
     background:linear-gradient(135deg,#7c3aed,#a78bfa);
 }
 
-/* ================= CHARTS ================= */
+/* CHARTS */
 .charts{
     display:grid;
     grid-template-columns:2fr 1fr;
@@ -188,7 +185,7 @@ body{
     border-radius:20px;
 }
 
-/* ================= TABLE ================= */
+/* TABLE */
 .table-box{
     background:#1e293b;
     padding:25px;
@@ -206,7 +203,29 @@ body{
     border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
-/* ================= MOBILE ================= */
+/* STATUS COLORS */
+.status-present{
+    background:#22c55e;
+    padding:5px 10px;
+    border-radius:20px;
+    font-size:13px;
+}
+
+.status-absent{
+    background:#ef4444;
+    padding:5px 10px;
+    border-radius:20px;
+    font-size:13px;
+}
+
+.time-badge{
+    background:#334155;
+    padding:5px 10px;
+    border-radius:20px;
+    font-size:13px;
+}
+
+/* MOBILE */
 @media(max-width:700px){
 
 .topbar-mobile{
@@ -271,7 +290,7 @@ body{
 
 <body>
 
-<!-- TOPBAR -->
+<!-- TOP BAR -->
 <div class="topbar-mobile">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
     <div>Smart Attendance</div>
@@ -290,8 +309,7 @@ body{
 <a href="manage_students.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>
 
-<!-- ONLY SUPER ADMIN CAN SEE -->
-<?php if($admin_role == "superadmin"){ ?>
+<?php if($admin_role=="superadmin"){ ?>
 <a href="admin_management.php">👮 Admin Management</a>
 <?php } ?>
 
@@ -312,22 +330,22 @@ body{
 
 <div class="stat-card present-card">
 <h2><?php echo $present_today; ?></h2>
-<p>Present Today</p>
+<p>Present</p>
 </div>
 
 <div class="stat-card absent-card">
 <h2><?php echo $absent_today; ?></h2>
-<p>Absent Today</p>
+<p>Absent</p>
 </div>
 
 <div class="stat-card total-card">
 <h2><?php echo $total_students; ?></h2>
-<p>Total Students</p>
+<p>Total</p>
 </div>
 
 <div class="stat-card rate-card">
 <h2><?php echo $attendance_percentage; ?>%</h2>
-<p>Attendance Rate</p>
+<p>Rate</p>
 </div>
 
 </div>
@@ -345,53 +363,50 @@ body{
 
 </div>
 
-<!-- RECENT -->
+<!-- RECENT ATTENDANCE -->
 <div class="table-box">
 
 <h3>Recent Attendance</h3>
 
 <table class="table">
 
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Status</th>
+<th>Date</th>
+<th>Time</th>
+</tr>
+</thead>
+
+<tbody>
+
 <?php while($row=$recent->fetch_assoc()){ ?>
 
 <tr>
+<td><?php echo $row['student_id']; ?></td>
 <td><?php echo $row['name']; ?></td>
-<td><?php echo $row['status']; ?></td>
+
+<td>
+<?php if($row['status']=="Present"){ ?>
+<span class="status-present">Present</span>
+<?php } else { ?>
+<span class="status-absent">Absent</span>
+<?php } ?>
+</td>
+
 <td><?php echo $row['date']; ?></td>
+
+<td>
+<span class="time-badge"><?php echo $row['time']; ?></span>
+</td>
+
 </tr>
 
 <?php } ?>
 
-</table>
-
-</div>
-
-<!-- STUDENTS LIST -->
-<div class="table-box">
-
-<h3>Students</h3>
-
-<table class="table">
-
-<tr>
-<th>#</th>
-<th>Name</th>
-<th>ID</th>
-</tr>
-
-<?php
-$students = $conn->query("SELECT * FROM students LIMIT 10");
-$i=1;
-while($s=$students->fetch_assoc()){
-?>
-
-<tr>
-<td><?php echo $i++; ?></td>
-<td><?php echo $s['name']; ?></td>
-<td><?php echo $s['student_id']; ?></td>
-</tr>
-
-<?php } ?>
+</tbody>
 
 </table>
 
