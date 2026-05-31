@@ -7,341 +7,486 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-$admin_role = $_SESSION['role']; // ✅ superadmin check
+$admin_role = $_SESSION['role'];
 
-$message = "";
+$success = "";
+$error   = "";
 
 if(isset($_POST['add_student'])){
 
-    $student_id = $_POST['student_id'];
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $phone = $_POST['phone'];
-    $department = $_POST['department'];
-    $course = $_POST['course'];
-    $year = $_POST['year'];
+    $student_id   = $_POST['student_id'];
+    $name         = $_POST['name'];
+    $email        = $_POST['email'];
+    $phone        = $_POST['phone'];
+    $department   = $_POST['department'];
+    $course       = $_POST['course'];
+    $year         = $_POST['year'];
     $fingerprint_id = $_POST['fingerprint_id'];
 
-    $insert = mysqli_query($conn,"
-    INSERT INTO students
-    (student_id,name,email,phone,department,course,year,fingerprint_id)
-    VALUES
-    ('$student_id','$name','$email','$phone','$department','$course','$year','$fingerprint_id')
-    ");
-
-    if($insert){
-        $message = "Student Added Successfully!";
+    // Check duplicate student ID
+    $check = $conn->query("SELECT id FROM students WHERE student_id='$student_id'");
+    if($check->num_rows > 0){
+        $error = "Student ID already exists.";
+    } else {
+        $insert = mysqli_query($conn,"
+            INSERT INTO students (student_id,name,email,phone,department,course,year,fingerprint_id)
+            VALUES ('$student_id','$name','$email','$phone','$department','$course','$year','$fingerprint_id')
+        ");
+        if($insert){
+            $success = "Student added successfully.";
+        } else {
+            $error = "Something went wrong. Please try again.";
+        }
     }
 }
+
+$total_students = $conn->query("SELECT COUNT(*) as c FROM students")->fetch_assoc()['c'];
 ?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<title>Add Student</title>
-
+<title>Add Student — Smart Attendance</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 
-/* ================= GLOBAL ================= */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins',sans-serif;
+:root{
+    --bg:        #080d18;
+    --surface:   #0f1929;
+    --surface2:  #162035;
+    --border:    rgba(255,255,255,0.07);
+    --accent:    #3b6ef8;
+    --accent2:   #6ee7f7;
+    --green:     #22c55e;
+    --red:       #f43f5e;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --sidebar-w: 240px;
 }
+
+*{ margin:0; padding:0; box-sizing:border-box; }
 
 body{
-    background:#0f172a;
-    color:white;
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
 }
 
-/* ================= MOBILE TOPBAR ================= */
-.topbar-mobile{
+/* ── MOBILE TOPBAR ── */
+.mob-bar{
     display:none;
-    justify-content:space-between;
     align-items:center;
-    padding:15px 20px;
-    background:#0f172a;
-    position:sticky;
-    top:0;
-    z-index:5000;
+    justify-content:space-between;
+    padding:14px 18px;
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:800;
 }
-
+.mob-bar .brand{ font-size:15px; font-weight:700; }
 .hamburger{
-    font-size:26px;
-    background:none;
-    border:none;
-    color:white;
+    background:none; border:none; color:var(--text);
+    font-size:22px; cursor:pointer;
+    padding:4px 6px; border-radius:8px; transition:.15s;
 }
+.hamburger:hover{ background:var(--surface2); }
 
-/* ================= SIDEBAR ================= */
+/* ── OVERLAY ── */
+.overlay{
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.6); z-index:900;
+}
+.overlay.on{ display:block; }
+
+/* ── SIDEBAR ── */
 .sidebar{
-    width:260px;
+    width:var(--sidebar-w);
     height:100vh;
-    position:fixed;
-    top:0;
-    left:0;
-    background:#1e293b;
-    padding:25px;
+    position:fixed; top:0; left:0;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    padding:24px 16px;
     z-index:1000;
-    transition:0.25s ease;
+    transition:.25s ease;
+    display:flex; flex-direction:column;
+    overflow-y:auto;
 }
-
 .sidebar .logo{
-    font-size:28px;
-    font-weight:700;
-    margin-bottom:40px;
+    font-size:20px; font-weight:700;
+    line-height:1.4; padding:0 6px;
+    margin-bottom:32px; letter-spacing:-.3px;
 }
-
+.nav-section{
+    font-size:10px; font-weight:600;
+    color:var(--muted); letter-spacing:1.2px;
+    text-transform:uppercase;
+    padding:0 8px; margin:20px 0 8px;
+}
 .sidebar a{
-    display:block;
-    color:white;
-    text-decoration:none;
-    padding:14px;
-    border-radius:10px;
-    margin-bottom:8px;
+    display:flex; align-items:center; gap:10px;
+    color:var(--text); text-decoration:none;
+    padding:11px 12px; border-radius:10px;
+    margin-bottom:3px;
+    font-size:14px; font-weight:500;
+    transition:.15s;
 }
+.sidebar a:hover{ background:var(--surface2); }
+.sidebar a.active{ background:var(--accent); color:#fff; font-weight:600; }
+.sidebar .spacer{ flex:1; }
+.sidebar .logout{ color:#f87171; }
+.sidebar .logout:hover{ background:rgba(244,63,94,.12); }
 
-.sidebar a:hover{
-    background:#2563eb;
-}
-
-/* ================= MAIN ================= */
+/* ── MAIN ── */
 .main{
-    margin-left:260px;
-    padding:40px;
+    margin-left:var(--sidebar-w);
+    padding:36px 40px;
+    min-height:100vh;
 }
 
-.title{
-    font-size:36px;
-    font-weight:700;
-    margin-bottom:25px;
+/* ── TOP BAR ── */
+.top-bar{
+    display:flex; align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+    margin-bottom:32px;
+}
+.page-title{ font-size:28px; font-weight:700; letter-spacing:-.5px; }
+.student-count{
+    background:var(--surface2);
+    border:1px solid var(--border);
+    padding:9px 18px; border-radius:50px;
+    font-size:13px; font-weight:500;
+    color:var(--muted);
+}
+.student-count span{ color:var(--text); font-weight:700; }
+
+/* ── ALERT ── */
+.alert{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; border-radius:14px;
+    margin-bottom:24px;
+    font-size:14px; font-weight:500;
+    animation:slideIn .3s ease;
+    max-width:780px;
+}
+@keyframes slideIn{
+    from{ opacity:0; transform:translateY(-8px); }
+    to{   opacity:1; transform:translateY(0);    }
+}
+.alert-ok { background:rgba(34,197,94,.10);  border:1px solid rgba(34,197,94,.22);  color:#4ade80; }
+.alert-err{ background:rgba(244,63,94,.10);  border:1px solid rgba(244,63,94,.2);   color:#fb7185; }
+
+/* ── LAYOUT ── */
+.content-row{
+    display:grid;
+    grid-template-columns:1fr 300px;
+    gap:24px;
+    align-items:start;
+    max-width:1100px;
 }
 
-/* ================= FORM CARD ================= */
-.form-card{
-    background:#1e293b;
-    border-radius:25px;
-    padding:40px;
-    max-width:1000px;
+/* ── FORM CARD ── */
+.card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:28px;
+}
+.card-head{
+    padding-bottom:18px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:24px;
+}
+.card-head h2{
+    font-size:14px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.5px;
+    color:var(--muted);
 }
 
-/* GRID */
+/* ── FORM GRID ── */
 .form-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:20px;
+    gap:18px;
 }
-
-/* INPUT */
-.input-box label{
-    display:block;
-    margin-bottom:8px;
-    color:#cbd5e1;
+.input-wrap{ display:flex; flex-direction:column; gap:6px; }
+.input-wrap label{
+    font-size:11px; font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase; letter-spacing:.8px;
 }
-
-.input-box input{
-    width:100%;
-    padding:14px;
-    border:none;
+.f-input{
+    padding:12px 14px;
+    background:var(--surface2);
+    border:1px solid var(--border);
     border-radius:12px;
-    background:#0f172a;
-    color:white;
-}
-
-/* BUTTON */
-.submit-btn{
-    width:100%;
-    margin-top:25px;
-    padding:16px;
-    border:none;
-    border-radius:14px;
-    background:#2563eb;
-    color:white;
-    font-size:16px;
-    font-weight:600;
-    cursor:pointer;
-}
-
-/* SUCCESS */
-.success{
-    background:#10b981;
-    padding:12px;
-    border-radius:12px;
-    margin-bottom:15px;
-}
-
-/* ================= MOBILE FIX ================= */
-@media(max-width:700px){
-
-.topbar-mobile{
-    display:flex;
-}
-
-/* sidebar behavior like dashboard */
-.sidebar{
-    position:fixed;
-    left:-280px;
-    top:0;
-    width:260px;
-    height:100vh;
-    z-index:6000;
-}
-
-.sidebar.active{
-    left:0;
-}
-
-/* main full width */
-.main{
-    margin-left:0;
-    padding:15px;
-}
-
-/* title smaller */
-.title{
-    font-size:24px;
-}
-
-/* FORM CARD MOBILE FIX */
-.form-card{
-    padding:18px;
-    border-radius:18px;
-}
-
-/* GRID BECOMES SINGLE COLUMN */
-.form-grid{
-    grid-template-columns:1fr;
-    gap:12px;
-}
-
-/* inputs smaller */
-.input-box input{
-    padding:12px;
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
     font-size:14px;
+    outline:none;
+    transition:.15s;
+    width:100%;
 }
+.f-input::placeholder{ color:var(--muted); opacity:.7; }
+.f-input:focus{ border-color:var(--accent); background:#1a2640; }
+
+.form-grid .full{ grid-column:1 / -1; }
 
 .submit-btn{
+    width:100%; margin-top:8px;
     padding:14px;
-    font-size:15px;
+    border:none; border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),#5b8af9);
+    color:#fff;
+    font-family:'DM Sans',sans-serif;
+    font-size:14px; font-weight:700;
+    cursor:pointer; transition:.2s;
+    letter-spacing:.3px;
+    box-shadow:0 4px 18px rgba(59,110,248,.25);
 }
+.submit-btn:hover{ transform:translateY(-2px); box-shadow:0 6px 22px rgba(59,110,248,.35); }
+.submit-btn:active{ transform:translateY(0); }
+
+/* ── SIDE PANEL ── */
+.side-panel{ display:flex; flex-direction:column; gap:16px; }
+
+.info-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:22px;
+}
+.info-card-title{
+    font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.8px;
+    color:var(--muted);
+    margin-bottom:16px;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--border);
 }
 
+/* field hints */
+.hint-list{ display:flex; flex-direction:column; gap:10px; }
+.hint-row{
+    display:flex; flex-direction:column; gap:2px;
+}
+.hint-field{
+    font-size:12px; font-weight:700;
+    color:var(--text);
+}
+.hint-desc{
+    font-size:11px; color:var(--muted); line-height:1.5;
+}
+
+/* required indicator */
+.req{
+    display:inline-block;
+    width:6px; height:6px;
+    background:var(--red);
+    border-radius:50%;
+    margin-left:4px;
+    vertical-align:middle;
+    margin-bottom:2px;
+}
+
+/* divider */
+.divider{
+    border:none;
+    border-top:1px solid var(--border);
+    margin:4px 0;
+}
+
+/* ── MOBILE ── */
+@media(max-width:900px){
+    .content-row{
+        grid-template-columns:1fr;
+    }
+    .side-panel{ order:-1; }
+}
+
+@media(max-width:768px){
+    .mob-bar{ display:flex; }
+    .sidebar{ left:-280px; }
+    .sidebar.on{ left:0; }
+    .main{ margin-left:0; padding:16px; }
+    .page-title{ font-size:22px; }
+    .form-grid{ grid-template-columns:1fr; }
+    .form-grid .full{ grid-column:1; }
+}
+
+@media(max-width:420px){
+    .page-title{ font-size:20px; }
+    .card{ padding:18px; }
+}
 </style>
-
 </head>
-
 <body>
 
-<!-- MOBILE TOPBAR -->
-<div class="topbar-mobile">
+<!-- MOBILE BAR -->
+<div class="mob-bar">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
-    <div>Smart Attendance</div>
+    <div class="brand">📘 Smart Attendance</div>
+    <div></div>
 </div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
+    <div class="logo">📘 Smart<br>Attendance</div>
 
-<div class="logo">📘 Smart<br>Attendance</div>
+    <div class="nav-section">Menu</div>
+    <a href="admin_dashboard.php">🏠 Dashboard</a>
+    <a href="add_student.php" class="active">➕ Add Student</a>
+    <a href="manage_students.php">👨‍🎓 Manage Students</a>
+    <a href="attendance.php">🗓️ Attendance</a>
+    <?php if($admin_role == "superadmin"){ ?>
+    <a href="admin_management.php">👮 Admin Management</a>
+    <?php } ?>
 
-<a href="admin_dashboard.php">🏠 Dashboard</a>
-<a href="add_student.php">➕ Add Student</a>
-<a href="manage_students.php">👨‍🎓 Manage Students</a>
-<a href="attendance.php">🗓️ Attendance</a>
-
-<!-- ✅ SUPER ADMIN ONLY -->
-<?php if($admin_role=="superadmin"){ ?>
-<a href="admin_management.php">👮 Admin Management</a>
-<?php } ?>
-
-<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
-
+    <div class="spacer"></div>
+    <div class="nav-section">Account</div>
+    <a href="javascript:void(0);" onclick="confirmLogout()" class="logout">🚪 Logout</a>
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
-<div class="title">Add New Student</div>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="page-title">Add Student</div>
+        <div class="student-count">
+            <span><?php echo $total_students; ?></span> students enrolled
+        </div>
+    </div>
 
-<?php if($message!=""){ ?>
-<div class="success"><?php echo $message; ?></div>
-<?php } ?>
+    <!-- ALERTS -->
+    <?php if($success){ ?>
+    <div class="alert alert-ok">&#10003; <?php echo $success; ?></div>
+    <?php } ?>
+    <?php if($error){ ?>
+    <div class="alert alert-err">&#9888; <?php echo $error; ?></div>
+    <?php } ?>
 
-<div class="form-card">
+    <!-- CONTENT -->
+    <div class="content-row">
 
-<form method="POST">
+        <!-- FORM CARD -->
+        <div class="card">
+            <div class="card-head">
+                <h2>Student Details</h2>
+            </div>
 
-<div class="form-grid">
+            <form method="POST">
+                <div class="form-grid">
 
-<div class="input-box">
-<label>Student ID</label>
-<input type="text" name="student_id" required>
-</div>
+                    <div class="input-wrap">
+                        <label>Student ID <span class="req"></span></label>
+                        <input class="f-input" type="text" name="student_id"
+                               placeholder="e.g. STU2024001" required>
+                    </div>
 
-<div class="input-box">
-<label>Name</label>
-<input type="text" name="name" required>
-</div>
+                    <div class="input-wrap">
+                        <label>Full Name <span class="req"></span></label>
+                        <input class="f-input" type="text" name="name"
+                               placeholder="e.g. Rahul Sharma" required>
+                    </div>
 
-<div class="input-box">
-<label>Email</label>
-<input type="email" name="email">
-</div>
+                    <div class="input-wrap">
+                        <label>Email Address</label>
+                        <input class="f-input" type="email" name="email"
+                               placeholder="student@college.edu">
+                    </div>
 
-<div class="input-box">
-<label>Phone</label>
-<input type="text" name="phone">
-</div>
+                    <div class="input-wrap">
+                        <label>Phone Number</label>
+                        <input class="f-input" type="text" name="phone"
+                               placeholder="e.g. 9876543210">
+                    </div>
 
-<div class="input-box">
-<label>Department</label>
-<input type="text" name="department">
-</div>
+                    <div class="input-wrap">
+                        <label>Department</label>
+                        <input class="f-input" type="text" name="department"
+                               placeholder="e.g. Computer Science">
+                    </div>
 
-<div class="input-box">
-<label>Course</label>
-<input type="text" name="course">
-</div>
+                    <div class="input-wrap">
+                        <label>Course</label>
+                        <input class="f-input" type="text" name="course"
+                               placeholder="e.g. B.Tech">
+                    </div>
 
-<div class="input-box">
-<label>Year</label>
-<input type="text" name="year">
-</div>
+                    <div class="input-wrap">
+                        <label>Year</label>
+                        <input class="f-input" type="text" name="year"
+                               placeholder="e.g. 2nd Year">
+                    </div>
 
-<div class="input-box">
-<label>Fingerprint ID</label>
-<input type="text" name="fingerprint_id">
-</div>
+                    <div class="input-wrap">
+                        <label>Fingerprint ID</label>
+                        <input class="f-input" type="text" name="fingerprint_id"
+                               placeholder="e.g. FP-001">
+                    </div>
 
-</div>
+                    <div class="full">
+                        <hr class="divider" style="margin-bottom:18px;">
+                        <button type="submit" name="add_student" class="submit-btn">
+                            Add Student
+                        </button>
+                    </div>
 
-<button class="submit-btn" type="submit" name="add_student">
-Add Student
-</button>
+                </div>
+            </form>
+        </div>
 
-</form>
+        <!-- SIDE PANEL -->
+        <div class="side-panel">
 
-</div>
+            <div class="info-card">
+                <div class="info-card-title">Field Guide</div>
+                <div class="hint-list">
+                    <div class="hint-row">
+                        <span class="hint-field">Student ID <span class="req"></span></span>
+                        <span class="hint-desc">Unique identifier. Must not already exist in the system.</span>
+                    </div>
+                    <div class="hint-row">
+                        <span class="hint-field">Full Name <span class="req"></span></span>
+                        <span class="hint-desc">Enter the student's full legal name.</span>
+                    </div>
+                    <div class="hint-row">
+                        <span class="hint-field">Fingerprint ID</span>
+                        <span class="hint-desc">Assigned after fingerprint enrollment. Leave blank if not yet enrolled.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-title">Note</div>
+                <p style="font-size:12px;color:var(--muted);line-height:1.7;">
+                    Fields marked with <span class="req" style="display:inline-block;vertical-align:middle;"></span>
+                    are required. All other fields are optional and can be filled later from
+                    <a href="manage_students.php" style="color:var(--accent);text-decoration:none;font-weight:600;">Manage Students</a>.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 
 <script>
-
 function toggleSidebar(){
-    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById('sidebar').classList.toggle('on');
+    document.getElementById('overlay').classList.toggle('on');
 }
-
 function confirmLogout(){
     if(confirm("Are you sure you want to logout?")){
-        window.location="logout.php";
+        window.location = "logout.php";
     }
 }
-
 </script>
 
 </body>
