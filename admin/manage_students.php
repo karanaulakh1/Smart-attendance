@@ -9,7 +9,7 @@ if(!isset($_SESSION['admin'])){
 
 $role = $_SESSION['role'] ?? 'admin';
 
-/* DELETE STUDENT */
+/* DELETE */
 if(isset($_GET['delete'])){
     $id = $_GET['delete'];
     mysqli_query($conn,"DELETE FROM students WHERE id='$id'");
@@ -17,7 +17,7 @@ if(isset($_GET['delete'])){
     exit();
 }
 
-/* UPDATE STUDENT */
+/* UPDATE */
 if(isset($_POST['update_student'])){
     $id = $_POST['id'];
 
@@ -38,7 +38,6 @@ if(isset($_POST['update_student'])){
     exit();
 }
 
-/* SEARCH */
 $search = $_GET['search'] ?? '';
 
 $students = mysqli_query($conn,"
@@ -48,14 +47,6 @@ OR name LIKE '%$search%'
 OR department LIKE '%$search%'
 ORDER BY id DESC
 ");
-
-$editData = null;
-
-if(isset($_GET['edit'])){
-    $edit_id = $_GET['edit'];
-    $editQuery = mysqli_query($conn,"SELECT * FROM students WHERE id='$edit_id'");
-    $editData = mysqli_fetch_assoc($editQuery);
-}
 ?>
 
 <!DOCTYPE html>
@@ -71,13 +62,7 @@ if(isset($_GET['edit'])){
 <style>
 
 /* GLOBAL */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Poppins;
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins;}
 body{
     background:linear-gradient(135deg,#0f172a,#1e293b,#312e81);
     color:white;
@@ -95,25 +80,24 @@ body{
     top:0;
     z-index:5000;
 }
-
 .hamburger{
     font-size:26px;
     background:none;
     border:none;
     color:white;
-    cursor:pointer;
 }
 
-/* SIDEBAR */
+/* SIDEBAR (SAME AS DASHBOARD STYLE) */
 .sidebar{
     width:260px;
-    min-height:100vh;
+    height:100vh;
     position:fixed;
     top:0;
     left:0;
     background:#1e293b;
     padding:25px;
     z-index:1000;
+    transition:0.25s ease;
 }
 
 .sidebar a{
@@ -124,7 +108,6 @@ body{
     border-radius:10px;
     margin-bottom:8px;
 }
-
 .sidebar a:hover{
     background:#2563eb;
 }
@@ -148,7 +131,6 @@ body{
     display:flex;
     gap:10px;
 }
-
 .search-box input{
     padding:12px;
     border-radius:10px;
@@ -156,7 +138,6 @@ body{
     background:rgba(255,255,255,0.08);
     color:white;
 }
-
 .search-box button{
     padding:12px 18px;
     border:none;
@@ -165,7 +146,7 @@ body{
     color:white;
 }
 
-/* TABLE CARD */
+/* TABLE */
 .table-card{
     background:#1e293b;
     padding:20px;
@@ -173,28 +154,19 @@ body{
     overflow-x:auto;
 }
 
-/* TABLE */
 table{
     width:100%;
     min-width:1100px;
     border-collapse:collapse;
 }
 
-/* 🔥 FIXED ROW SIZE (IMPORTANT CHANGE) */
 th,td{
-    padding:10px 12px;   /* reduced from 14–20px */
+    padding:10px 12px;
     font-size:14px;
-    line-height:1.2;
-    vertical-align:middle;
     border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
-/* optional compact row height */
-table tr{
-    height:42px;
-}
-
-/* FINGERPRINT */
+/* FP */
 .fp{
     background:#10b981;
     padding:5px 10px;
@@ -202,31 +174,39 @@ table tr{
     font-size:12px;
 }
 
-/* ACTION BUTTONS */
+/* ACTION BUTTONS FIXED */
 .action{
     display:flex;
-    gap:8px;
+    gap:6px;
+    align-items:center;
     flex-wrap:wrap;
 }
 
-.btn{
-    padding:7px 10px;
-    border-radius:8px;
+/* BIG EDIT BUTTON */
+.btn-edit{
+    background:#f59e0b;
+    padding:8px 14px;
+    border-radius:10px;
     text-decoration:none;
-    font-size:12px;
+    color:white;
     font-weight:600;
-    transition:0.2s;
+    font-size:13px;
 }
 
-.edit{background:#f59e0b;color:white;}
-.delete{background:#ef4444;color:white;}
-.enroll{background:#2563eb;color:white;}
-
-.btn:hover{
-    transform:scale(1.05);
+/* SMALL BUTTONS */
+.btn-small{
+    padding:6px 10px;
+    border-radius:8px;
+    font-size:12px;
+    text-decoration:none;
+    color:white;
+    font-weight:600;
 }
 
-/* MOBILE */
+.enroll{background:#2563eb;}
+.delete{background:#ef4444;}
+
+/* MOBILE FIX */
 @media(max-width:768px){
 
 .topbar-mobile{
@@ -244,32 +224,48 @@ table tr{
     gap:10px;
 }
 
-table{
-    min-width:900px;
-}
+/* buttons stack properly */
+.action{
+    flex-direction:row;
+    flex-wrap:wrap;
 }
 
-/* SIDEBAR MOBILE */
+/* edit stays bigger */
+.btn-edit{
+    width:100%;
+    text-align:center;
+}
+
+/* enroll + delete stay in line */
+.btn-small{
+    font-size:11px;
+    padding:6px 8px;
+}
+
+/* sidebar mobile like dashboard */
+.sidebar{
+    left:-280px;
+    position:fixed;
+    z-index:3000;
+}
+
+.sidebar.active{
+    left:0;
+}
+
 .overlay{
-    display:none;
     position:fixed;
     top:0;left:0;
     width:100%;height:100%;
     background:rgba(0,0,0,0.6);
+    display:none;
     z-index:2000;
 }
 
-.overlay.active{display:block;}
+.overlay.active{
+    display:block;
+}
 
-@media(max-width:768px){
-.sidebar{
-    left:-280px;
-    position:fixed;
-    transition:0.25s ease;
-}
-.sidebar.active{
-    left:0;
-}
 }
 
 </style>
@@ -288,7 +284,9 @@ table{
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
-<div style="font-size:28px;font-weight:700;margin-bottom:20px;">📘 Smart Attendance</div>
+<div style="font-size:28px;font-weight:700;margin-bottom:20px;">
+📘 Smart Attendance
+</div>
 
 <a href="admin_dashboard.php">🏠 Dashboard</a>
 <a href="add_student.php">➕ Add Student</a>
@@ -350,11 +348,13 @@ table{
 <td>
 <div class="action">
 
-<a class="btn enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
+<!-- BIG EDIT -->
+<a class="btn-edit" href="?edit=<?php echo $row['id']; ?>">✏ Edit</a>
 
-<a class="btn edit" href="?edit=<?php echo $row['id']; ?>">Edit</a>
+<!-- INLINE BUTTONS -->
+<a class="btn-small enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
 
-<a class="btn delete" onclick="return confirm('Delete?')" href="?delete=<?php echo $row['id']; ?>">Delete</a>
+<a class="btn-small delete" onclick="return confirm('Delete?')" href="?delete=<?php echo $row['id']; ?>">Delete</a>
 
 </div>
 </td>
