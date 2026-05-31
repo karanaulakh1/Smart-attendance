@@ -457,7 +457,7 @@ body{
                     </div>
                     <div class="hint-row">
                         <span class="hint-field">Fingerprint ID</span>
-                        <span class="hint-desc">Assigned after fingerprint enrollment. Leave blank if not yet enrolled.</span>
+                        <span class="hint-desc">Assign fingerprint after enroll in Manage student </span>
                     </div>
                 </div>
             </div>
