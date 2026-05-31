@@ -281,16 +281,16 @@ body{
 /* ================= TABLE ================= */
 table{
     width:100%;
-    min-width:1200px;
+    min-width:1100px;
     border-collapse:separate;
-    border-spacing:0 14px;
+    border-spacing:0 8px;
 }
 
 th{
     text-align:left;
-    padding:16px;
+    padding:10px 12px;
     color:#93c5fd;
-    font-size:14px;
+    font-size:13px;
 }
 
 tbody tr{
@@ -305,7 +305,8 @@ tbody tr:hover{
 }
 
 td{
-    padding:20px 16px;
+    padding:10px 12px;
+    font-size:13px;
 }
 
 tbody tr td:first-child{
@@ -327,21 +328,22 @@ tbody tr td:last-child{
 /* ================= ACTION BUTTONS ================= */
 .action{
     display:flex;
-    gap:10px;
+    gap:6px;
     align-items:center;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
 }
 
 .btn{
-    padding:10px 15px;
-    border-radius:10px;
+    padding:7px 10px;
+    border-radius:8px;
     text-decoration:none;
     color:white;
-    font-size:14px;
+    font-size:12px;
     font-weight:600;
     border:none;
     cursor:pointer;
     display:inline-block;
+    white-space:nowrap;
 }
 
 .btn-enroll{
@@ -460,6 +462,18 @@ tbody tr td:last-child{
         align-items:flex-start;
     }
 
+    /* keep buttons on one row — table scrolls horizontally */
+    .action{
+        flex-wrap:nowrap;
+        gap:5px;
+    }
+
+    .btn{
+        padding:6px 8px;
+        font-size:11px;
+        white-space:nowrap;
+    }
+
     .form-grid{
         grid-template-columns:1fr;
     }
@@ -526,7 +540,6 @@ tbody tr td:last-child{
 
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Student ID</th>
                     <th>Name</th>
                     <th>Email</th>
@@ -544,7 +557,6 @@ tbody tr td:last-child{
             <?php while($row = mysqli_fetch_assoc($students)){ ?>
 
                 <tr>
-                    <td><?php echo $row['id']; ?></td>
                     <td><?php echo $row['student_id']; ?></td>
                     <td><?php echo $row['name']; ?></td>
                     <td><?php echo $row['email']; ?></td>
