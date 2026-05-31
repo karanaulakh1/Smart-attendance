@@ -16,7 +16,7 @@ if(isset($_POST['add_admin'])){
     $role = $_POST['role'];
 
     $conn->query("
-        INSERT INTO admin (username, email, password, eolr)
+        INSERT INTO admin (username, email, password, role)
         VALUES ('$username', '$email', '$password', '$role')
     ");
 
@@ -48,7 +48,7 @@ $admins = $conn->query("SELECT * FROM admin");
 
 <style>
 
-/* GLOBAL */
+/* ================= GLOBAL ================= */
 body{
     margin:0;
     font-family:Poppins;
@@ -57,16 +57,16 @@ body{
     overflow-x:hidden;
 }
 
-/* TOP BAR (MOBILE) */
+/* ================= TOP BAR ================= */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
     align-items:center;
     padding:15px 20px;
-    background:rgba(15,23,42,0.95);
+    background:#0f172a;
     position:sticky;
     top:0;
-    z-index:3000;
+    z-index:5000;
 }
 
 .hamburger{
@@ -77,17 +77,16 @@ body{
     cursor:pointer;
 }
 
-/* SIDEBAR (DESKTOP) */
+/* ================= SIDEBAR (DESKTOP) ================= */
 .sidebar{
     width:260px;
     height:100vh;
     position:fixed;
     top:0;
     left:0;
-    background:rgba(15,23,42,0.95);
+    background:#111827; /* SOLID COLOR */
     padding:25px;
     z-index:2000;
-    transition:0.3s ease;
 }
 
 .sidebar .logo{
@@ -109,25 +108,18 @@ body{
     background:#2563eb;
 }
 
-/* OVERLAY */
-.overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.5);
-    display:none;
-    z-index:2500;
-}
-
-/* MAIN CONTENT */
+/* ================= MAIN ================= */
 .container{
     margin-left:260px;
     padding:30px;
 }
 
-/* FORM */
+/* ================= OVERLAY ================= */
+.overlay{
+    display:none;
+}
+
+/* ================= FORM ================= */
 .form-box{
     background:rgba(30,41,59,0.8);
     padding:25px;
@@ -143,7 +135,6 @@ input, select{
     border:none;
 }
 
-/* BUTTON */
 button{
     padding:12px 18px;
     background:#2563eb;
@@ -153,7 +144,7 @@ button{
     cursor:pointer;
 }
 
-/* TABLE */
+/* ================= TABLE ================= */
 table{
     width:100%;
     border-collapse:collapse;
@@ -176,7 +167,7 @@ th{
     text-decoration:none;
 }
 
-/* MOBILE FIX (IMPORTANT) */
+/* ================= MOBILE ================= */
 @media(max-width:700px){
 
 .topbar-mobile{
@@ -188,19 +179,37 @@ th{
     padding:15px;
 }
 
-/* sidebar hidden */
-.sidebar{
-    transform:translateX(-100%);
-}
-
-/* sidebar active */
-.sidebar.active{
-    transform:translateX(0);
-}
-
 /* overlay active */
+.overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+    z-index:4000;
+}
+
 .overlay.active{
     display:block;
+}
+
+/* POP OUT ANIMATION (NOT SLIDE) */
+.sidebar{
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%) scale(0.6);
+    opacity:0;
+    width:85%;
+    height:auto;
+    border-radius:20px;
+    transition:0.25s ease;
+}
+
+/* active state */
+.sidebar.active{
+    transform:translate(-50%,-50%) scale(1);
+    opacity:1;
 }
 
 }
@@ -283,7 +292,7 @@ th{
 <td><?php echo $row['username']; ?></td>
 <td><?php echo $row['email']; ?></td>
 <td><?php echo $row['password']; ?></td>
-<td><?php echo $row['eolr']; ?></td>
+<td><?php echo $row['role']; ?></td>
 <td>
 <a class="delete" href="?delete=<?php echo $row['id']; ?>"
 onclick="return confirm('Delete admin?')">
@@ -306,7 +315,7 @@ function toggleSidebar(){
     document.getElementById("overlay").classList.toggle("active");
 }
 
-/* close when clicking outside */
+/* close on outside click */
 document.addEventListener("click", function(e){
 
     let sidebar = document.getElementById("sidebar");
@@ -319,6 +328,14 @@ document.addEventListener("click", function(e){
         }
     }
 
+});
+
+/* reset on resize */
+window.addEventListener("resize", function(){
+    if(window.innerWidth > 700){
+        document.getElementById("sidebar").classList.remove("active");
+        document.getElementById("overlay").classList.remove("active");
+    }
 });
 
 </script>
