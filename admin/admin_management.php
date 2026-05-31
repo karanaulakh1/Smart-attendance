@@ -106,6 +106,21 @@ th{
     background:#334155;
 }
 
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+<div class="logo">📘 Smart<br>Attendance</div>
+
+<a href="admin_dashboard.php" class="active">🏠 Dashboard</a>
+<a href="add_student.php">➕ Add Student</a>
+<a href="manage_students.php">👨‍🎓 Manage Students</a>
+<a href="attendance.php">🗓️ Attendance</a>
+<a href="admin_management.php">👮 Admin Management</a>
+
+<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
+
+</div>
+
 /* DELETE */
 .delete{
     color:#ef4444;
