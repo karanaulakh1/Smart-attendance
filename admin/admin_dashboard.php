@@ -71,7 +71,54 @@ for($i=6; $i>=0; $i--){
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* MOBILE TOPBAR */
+.topbar-mobile{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:rgba(15,23,42,0.95);
+    position:sticky;
+    top:0;
+    z-index:1000;
+}
 
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+}
+
+/* SIDEBAR ANIMATION */
+.sidebar{
+    transition:0.3s ease;
+}
+
+/* MOBILE */
+@media(max-width:700px){
+
+.topbar-mobile{
+    display:flex;
+}
+
+.sidebar{
+    position:fixed;
+    left:-260px;
+    top:0;
+    height:100%;
+    z-index:999;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.main{
+    margin-left:0;
+}
+}
 /* GLOBAL FIX */
 html, body{
     margin:0;
@@ -244,12 +291,18 @@ canvas{
 
 <body>
 
+<!-- HAMBURGER BUTTON -->
+<div class="topbar-mobile">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="mobile-title">Smart Attendance</div>
+</div>
+
 <!-- SIDEBAR -->
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
 
 <div class="logo">📘 Smart<br>Attendance</div>
 
-<a href="admin_dashboard.php" class="active">🏠 Dashboard</a>
+<a href="admin_dashboard.php">🏠 Dashboard</a>
 <a href="add_student.php">➕ Add Student</a>
 <a href="manage_students.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>

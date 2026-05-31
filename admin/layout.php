@@ -19,6 +19,54 @@ if(!isset($_SESSION['admin'])){
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
     <style>
+        /* MOBILE TOPBAR */
+.topbar-mobile{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:rgba(15,23,42,0.95);
+    position:sticky;
+    top:0;
+    z-index:1000;
+}
+
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+}
+
+/* SIDEBAR ANIMATION */
+.sidebar{
+    transition:0.3s ease;
+}
+
+/* MOBILE */
+@media(max-width:700px){
+
+.topbar-mobile{
+    display:flex;
+}
+
+.sidebar{
+    position:fixed;
+    left:-260px;
+    top:0;
+    height:100%;
+    z-index:999;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.main{
+    margin-left:0;
+}
+}
         body {
             margin: 0;
             font-family: 'Segoe UI', sans-serif;
@@ -90,16 +138,25 @@ if(!isset($_SESSION['admin'])){
 
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar">
-    <h4>📊 Smart Attendance</h4>
+<!-- HAMBURGER BUTTON -->
+<div class="topbar-mobile">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="mobile-title">Smart Attendance</div>
+</div>
 
-    <a href="admin_dashboard.php"><i class="fa fa-chart-bar"></i> Dashboard</a>
-    <a href="add_student.php"><i class="fa fa-user-plus"></i> Add Student</a>
-    <a href="manage_students.php"><i class="fa fa-users"></i> Manage Students</a>
-    <a href="attendance.php"><i class="fa fa-calendar-check"></i> Attendance</a>
-    <a href="admin_management.php">👮 Admin Management</a>
-    <a href="logout.php"><i class="fa fa-sign-out-alt"></i> Logout</a>
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+
+<div class="logo">📘 Smart<br>Attendance</div>
+
+<a href="admin_dashboard.php">🏠 Dashboard</a>
+<a href="add_student.php">➕ Add Student</a>
+<a href="manage_students.php">👨‍🎓 Manage Students</a>
+<a href="attendance.php">🗓️ Attendance</a>
+<a href="admin_management.php">👮 Admin Management</a>
+
+<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
+
 </div>
 
 <!-- Topbar -->

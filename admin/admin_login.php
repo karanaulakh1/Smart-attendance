@@ -58,7 +58,54 @@ if(isset($_POST['login'])){
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+/* MOBILE TOPBAR */
+.topbar-mobile{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:rgba(15,23,42,0.95);
+    position:sticky;
+    top:0;
+    z-index:1000;
+}
 
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+}
+
+/* SIDEBAR ANIMATION */
+.sidebar{
+    transition:0.3s ease;
+}
+
+/* MOBILE */
+@media(max-width:700px){
+
+.topbar-mobile{
+    display:flex;
+}
+
+.sidebar{
+    position:fixed;
+    left:-260px;
+    top:0;
+    height:100%;
+    z-index:999;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.main{
+    margin-left:0;
+}
+}
 *{
     margin:0;
     padding:0;
