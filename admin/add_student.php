@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 include '../database.php';
 
@@ -7,6 +6,8 @@ if(!isset($_SESSION['admin'])){
     header("Location: admin_login.php");
     exit();
 }
+
+$admin_role = $_SESSION['role']; // ✅ superadmin check
 
 $message = "";
 
@@ -22,38 +23,16 @@ if(isset($_POST['add_student'])){
     $fingerprint_id = $_POST['fingerprint_id'];
 
     $insert = mysqli_query($conn,"
-
     INSERT INTO students
-    (
-    student_id,
-    name,
-    email,
-    phone,
-    department,
-    course,
-    year,
-    fingerprint_id
-    )
-
+    (student_id,name,email,phone,department,course,year,fingerprint_id)
     VALUES
-    (
-    '$student_id',
-    '$name',
-    '$email',
-    '$phone',
-    '$department',
-    '$course',
-    '$year',
-    '$fingerprint_id'
-    )
-
+    ('$student_id','$name','$email','$phone','$department','$course','$year','$fingerprint_id')
     ");
 
     if($insert){
         $message = "Student Added Successfully!";
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -62,60 +41,13 @@ if(isset($_POST['add_student'])){
 
 <title>Add Student</title>
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* MOBILE TOPBAR */
-.topbar-mobile{
-    display:none;
-    justify-content:space-between;
-    align-items:center;
-    padding:15px 20px;
-    background:rgba(15,23,42,0.95);
-    position:sticky;
-    top:0;
-    z-index:1000;
-}
 
-.hamburger{
-    font-size:26px;
-    background:none;
-    border:none;
-    color:white;
-    cursor:pointer;
-}
-
-/* SIDEBAR ANIMATION */
-.sidebar{
-    transition:0.3s ease;
-}
-
-/* MOBILE */
-@media(max-width:700px){
-
-.topbar-mobile{
-    display:flex;
-}
-
-.sidebar{
-    position:fixed;
-    left:-260px;
-    top:0;
-    height:100%;
-    z-index:999;
-}
-
-.sidebar.active{
-    left:0;
-}
-
-.main{
-    margin-left:0;
-}
-}
+/* ================= GLOBAL ================= */
 *{
     margin:0;
     padding:0;
@@ -124,260 +56,180 @@ content="width=device-width, initial-scale=1.0">
 }
 
 body{
-
-    background:
-    linear-gradient(
-    135deg,
-    #0f172a,
-    #1e293b,
-    #312e81
-    );
-
-    min-height:100vh;
+    background:#0f172a;
     color:white;
 }
 
-.container{
-    display:flex;
+/* ================= MOBILE TOPBAR ================= */
+.topbar-mobile{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:#0f172a;
+    position:sticky;
+    top:0;
+    z-index:5000;
 }
 
-/* SIDEBAR */
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+}
 
+/* ================= SIDEBAR ================= */
 .sidebar{
-
     width:260px;
-
-    min-height:100vh;
-
-    background:
-    linear-gradient(
-    180deg,
-    rgba(15,23,42,0.98),
-    rgba(30,41,59,0.96)
-    );
-
-    backdrop-filter:blur(20px);
-
-    border-right:
-    1px solid rgba(255,255,255,0.06);
-
-    padding:28px 18px;
-
+    height:100vh;
     position:fixed;
-
     top:0;
     left:0;
+    background:#1e293b;
+    padding:25px;
+    z-index:1000;
+    transition:0.25s ease;
 }
 
-.logo{
-
-    font-size:30px;
-
+.sidebar .logo{
+    font-size:28px;
     font-weight:700;
+    margin-bottom:40px;
+}
 
+.sidebar a{
+    display:block;
     color:white;
-
-    line-height:1.3;
-
-    margin-bottom:50px;
-
-    padding-left:8px;
-}
-
-.menu{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:8px;
-}
-
-.menu a{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:14px;
-
     text-decoration:none;
-
-    color:#ffffff;
-
-    font-size:18px;
-
-    font-weight:500;
-
-    padding:16px 18px;
-
-    border-radius:16px;
-
-    transition:0.3s;
+    padding:14px;
+    border-radius:10px;
+    margin-bottom:8px;
 }
 
-.menu a:hover{
-
-    background:
-    linear-gradient(
-    135deg,
-    #2563eb,
-    #38bdf8
-    );
-
-    transform:translateX(4px);
+.sidebar a:hover{
+    background:#2563eb;
 }
 
-.menu .active{
-
-    background:
-    linear-gradient(
-    135deg,
-    #2563eb,
-    #38bdf8
-    );
-
-    box-shadow:
-    0 8px 25px rgba(37,99,235,0.35);
-}
-
-/* MAIN */
-
+/* ================= MAIN ================= */
 .main{
-
     margin-left:260px;
-
-    width:calc(100% - 260px);
-
     padding:40px;
 }
 
 .title{
-
-    font-size:40px;
-
+    font-size:36px;
     font-weight:700;
-
-    margin-bottom:30px;
+    margin-bottom:25px;
 }
 
-/* FORM */
-
+/* ================= FORM CARD ================= */
 .form-card{
-
-    background:
-    rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(18px);
-
-    border-radius:30px;
-
+    background:#1e293b;
+    border-radius:25px;
     padding:40px;
-
     max-width:1000px;
 }
 
+/* GRID */
 .form-grid{
-
     display:grid;
-
     grid-template-columns:1fr 1fr;
-
-    gap:25px;
+    gap:20px;
 }
 
+/* INPUT */
 .input-box label{
-
     display:block;
-
-    margin-bottom:10px;
-
+    margin-bottom:8px;
     color:#cbd5e1;
 }
 
 .input-box input{
-
     width:100%;
-
-    padding:16px;
-
+    padding:14px;
     border:none;
-
-    border-radius:16px;
-
-    background:
-    rgba(255,255,255,0.08);
-
+    border-radius:12px;
+    background:#0f172a;
     color:white;
-
-    font-size:15px;
 }
 
-.input-box input::placeholder{
-
-    color:#94a3b8;
-}
-
+/* BUTTON */
 .submit-btn{
-
     width:100%;
-
-    margin-top:30px;
-
-    padding:18px;
-
+    margin-top:25px;
+    padding:16px;
     border:none;
-
-    border-radius:18px;
-
-    background:
-    linear-gradient(
-    135deg,
-    #2563eb,
-    #38bdf8
-    );
-
+    border-radius:14px;
+    background:#2563eb;
     color:white;
-
-    font-size:18px;
-
+    font-size:16px;
     font-weight:600;
-
     cursor:pointer;
 }
 
+/* SUCCESS */
 .success{
-
     background:#10b981;
-
-    padding:16px;
-
-    border-radius:16px;
-
-    margin-bottom:20px;
+    padding:12px;
+    border-radius:12px;
+    margin-bottom:15px;
 }
 
-@media(max-width:900px){
+/* ================= MOBILE FIX ================= */
+@media(max-width:700px){
 
+.topbar-mobile{
+    display:flex;
+}
+
+/* sidebar behavior like dashboard */
+.sidebar{
+    position:fixed;
+    left:-280px;
+    top:0;
+    width:260px;
+    height:100vh;
+    z-index:6000;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+/* main full width */
 .main{
     margin-left:0;
-    width:100%;
+    padding:15px;
 }
 
-.sidebar{
-    position:relative;
-    width:100%;
-    min-height:auto;
+/* title smaller */
+.title{
+    font-size:24px;
 }
 
-.container{
-    flex-direction:column;
+/* FORM CARD MOBILE FIX */
+.form-card{
+    padding:18px;
+    border-radius:18px;
 }
 
+/* GRID BECOMES SINGLE COLUMN */
 .form-grid{
     grid-template-columns:1fr;
+    gap:12px;
 }
 
+/* inputs smaller */
+.input-box input{
+    padding:12px;
+    font-size:14px;
+}
+
+.submit-btn{
+    padding:14px;
+    font-size:15px;
+}
 }
 
 </style>
@@ -386,12 +238,10 @@ body{
 
 <body>
 
-<div class="container">
-
-<!-- HAMBURGER BUTTON -->
+<!-- MOBILE TOPBAR -->
 <div class="topbar-mobile">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
-    <div class="mobile-title">Smart Attendance</div>
+    <div>Smart Attendance</div>
 </div>
 
 <!-- SIDEBAR -->
@@ -403,26 +253,23 @@ body{
 <a href="add_student.php">➕ Add Student</a>
 <a href="manage_students.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>
+
+<!-- ✅ SUPER ADMIN ONLY -->
+<?php if($admin_role=="superadmin"){ ?>
 <a href="admin_management.php">👮 Admin Management</a>
+<?php } ?>
 
 <a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
 
 </div>
 
 <!-- MAIN -->
-
 <div class="main">
 
-<div class="title">
-Add New Student
-</div>
+<div class="title">Add New Student</div>
 
 <?php if($message!=""){ ?>
-
-<div class="success">
-<?php echo $message; ?>
-</div>
-
+<div class="success"><?php echo $message; ?></div>
 <?php } ?>
 
 <div class="form-card">
@@ -473,12 +320,8 @@ Add New Student
 
 </div>
 
-<button class="submit-btn"
-type="submit"
-name="add_student">
-
+<button class="submit-btn" type="submit" name="add_student">
 Add Student
-
 </button>
 
 </form>
@@ -487,31 +330,19 @@ Add Student
 
 </div>
 
-</div>
 <script>
 
-function confirmLogout(){
-
-    let confirmAction = confirm(
-    "Are you sure you want to logout?"
-    );
-
-    if(confirmAction){
-
-        window.location = "logout.php";
-
-    }
-
-}
-
-</script>
-<script>
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
 }
+
+function confirmLogout(){
+    if(confirm("Are you sure you want to logout?")){
+        window.location="logout.php";
+    }
+}
+
 </script>
 
-</body>
-</html>
 </body>
 </html>
