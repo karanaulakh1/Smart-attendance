@@ -7,9 +7,10 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-$role = $_SESSION['role'] ?? 'admin';
+/* SUPER ADMIN ROLE */
+$admin_role = $_SESSION['role'] ?? 'admin';
 
-/* DELETE */
+/* DELETE STUDENT */
 if(isset($_GET['delete'])){
     $id = $_GET['delete'];
     mysqli_query($conn,"DELETE FROM students WHERE id='$id'");
@@ -17,8 +18,9 @@ if(isset($_GET['delete'])){
     exit();
 }
 
-/* UPDATE */
+/* UPDATE STUDENT */
 if(isset($_POST['update_student'])){
+
     $id = $_POST['id'];
 
     mysqli_query($conn,"
@@ -38,7 +40,8 @@ if(isset($_POST['update_student'])){
     exit();
 }
 
-$search = $_GET['search'] ?? '';
+/* SEARCH */
+$search = $_GET['search'] ?? "";
 
 $students = mysqli_query($conn,"
 SELECT * FROM students
@@ -47,24 +50,32 @@ OR name LIKE '%$search%'
 OR department LIKE '%$search%'
 ORDER BY id DESC
 ");
+
+/* EDIT */
+$editData = null;
+if(isset($_GET['edit'])){
+    $edit_id = $_GET['edit'];
+    $editData = mysqli_fetch_assoc(mysqli_query($conn,"SELECT * FROM students WHERE id='$edit_id'"));
+}
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-
 <title>Manage Students</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 
 /* GLOBAL */
-*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins;}
+*{box-sizing:border-box;}
 body{
-    background:linear-gradient(135deg,#0f172a,#1e293b,#312e81);
+    margin:0;
+    font-family:Poppins;
+    background:#0f172a;
     color:white;
     overflow-x:hidden;
 }
@@ -74,11 +85,11 @@ body{
     display:none;
     justify-content:space-between;
     align-items:center;
-    padding:15px 20px;
+    padding:15px 18px;
     background:#0f172a;
     position:sticky;
     top:0;
-    z-index:5000;
+    z-index:3000;
 }
 .hamburger{
     font-size:26px;
@@ -87,7 +98,7 @@ body{
     color:white;
 }
 
-/* SIDEBAR (SAME AS DASHBOARD STYLE) */
+/* SIDEBAR */
 .sidebar{
     width:260px;
     height:100vh;
@@ -96,29 +107,27 @@ body{
     left:0;
     background:#1e293b;
     padding:25px;
-    z-index:1000;
+    z-index:2000;
     transition:0.25s ease;
 }
 
 .sidebar a{
     display:block;
+    padding:12px;
     color:white;
     text-decoration:none;
-    padding:14px;
     border-radius:10px;
     margin-bottom:8px;
 }
-.sidebar a:hover{
-    background:#2563eb;
-}
+.sidebar a:hover{background:#2563eb;}
 
 /* MAIN */
 .main{
     margin-left:260px;
-    padding:30px;
+    padding:25px;
 }
 
-/* TOPBAR */
+/* TOP */
 .topbar{
     display:flex;
     justify-content:space-between;
@@ -127,15 +136,11 @@ body{
 }
 
 /* SEARCH */
-.search-box{
-    display:flex;
-    gap:10px;
-}
 .search-box input{
     padding:12px;
     border-radius:10px;
     border:none;
-    background:rgba(255,255,255,0.08);
+    background:#1e293b;
     color:white;
 }
 .search-box button{
@@ -150,23 +155,22 @@ body{
 .table-card{
     background:#1e293b;
     padding:20px;
-    border-radius:20px;
+    border-radius:18px;
     overflow-x:auto;
 }
 
 table{
     width:100%;
-    min-width:1100px;
     border-collapse:collapse;
 }
 
 th,td{
-    padding:10px 12px;
+    padding:10px;
     font-size:14px;
-    border-bottom:1px solid rgba(255,255,255,0.1);
+    border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
-/* FP */
+/* FINGERPRINT */
 .fp{
     background:#10b981;
     padding:5px 10px;
@@ -174,100 +178,104 @@ th,td{
     font-size:12px;
 }
 
-/* ACTION BUTTONS FIXED */
-.action{
+/* ACTION BUTTONS */
+.actions{
     display:flex;
-    gap:6px;
-    align-items:center;
-    flex-wrap:wrap;
+    flex-direction:column;
+    gap:8px;
 }
 
-/* BIG EDIT BUTTON */
-.btn-edit{
-    background:#f59e0b;
-    padding:8px 14px;
-    border-radius:10px;
-    text-decoration:none;
-    color:white;
-    font-weight:600;
-    font-size:13px;
+/* row buttons */
+.btn-row{
+    display:flex;
+    gap:8px;
 }
 
-/* SMALL BUTTONS */
-.btn-small{
-    padding:6px 10px;
-    border-radius:8px;
+.btn{
+    padding:8px 10px;
     font-size:12px;
+    border-radius:8px;
     text-decoration:none;
     color:white;
-    font-weight:600;
+    text-align:center;
+    flex:1;
 }
 
 .enroll{background:#2563eb;}
 .delete{background:#ef4444;}
+.edit{
+    background:#f59e0b;
+    width:100%;
+}
 
-/* MOBILE FIX */
-@media(max-width:768px){
-
-.topbar-mobile{
+/* MODAL */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
     display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
-.main{
-    margin-left:0;
-    padding:15px;
+.modal-content{
+    background:#111827;
+    padding:25px;
+    border-radius:15px;
+    width:90%;
+    max-width:600px;
 }
 
-.topbar{
-    flex-direction:column;
-    align-items:flex-start;
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
     gap:10px;
 }
 
-/* buttons stack properly */
-.action{
-    flex-direction:row;
-    flex-wrap:wrap;
-}
-
-/* edit stays bigger */
-.btn-edit{
+.input-box input{
     width:100%;
-    text-align:center;
+    padding:10px;
+    background:#1e293b;
+    border:none;
+    border-radius:8px;
+    color:white;
 }
 
-/* enroll + delete stay in line */
-.btn-small{
-    font-size:11px;
-    padding:6px 8px;
+.save-btn{
+    width:100%;
+    margin-top:15px;
+    padding:12px;
+    background:#2563eb;
+    border:none;
+    color:white;
+    border-radius:10px;
 }
 
-/* sidebar mobile like dashboard */
+/* MOBILE FIX LIKE DASHBOARD */
+@media(max-width:768px){
+
+.topbar-mobile{display:flex;}
+
+.main{margin-left:0;}
+
 .sidebar{
     left:-280px;
     position:fixed;
-    z-index:3000;
 }
 
 .sidebar.active{
     left:0;
 }
 
-.overlay{
-    position:fixed;
-    top:0;left:0;
-    width:100%;height:100%;
-    background:rgba(0,0,0,0.6);
-    display:none;
-    z-index:2000;
+/* buttons fix */
+.btn-row{
+    flex-direction:row;
 }
 
-.overlay.active{
-    display:block;
+.actions{
+    align-items:stretch;
 }
-
 }
-
 </style>
 </head>
 
@@ -279,84 +287,74 @@ th,td{
     <div>Manage Students</div>
 </div>
 
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
-<div style="font-size:28px;font-weight:700;margin-bottom:20px;">
+<div style="font-size:22px;font-weight:700;margin-bottom:20px;">
 📘 Smart Attendance
 </div>
 
-<a href="admin_dashboard.php">🏠 Dashboard</a>
-<a href="add_student.php">➕ Add Student</a>
-<a href="manage_students.php">👨‍🎓 Manage Students</a>
-<a href="attendance.php">🗓️ Attendance</a>
+<a href="admin_dashboard.php">Dashboard</a>
+<a href="add_student.php">Add Student</a>
+<a href="manage_students.php">Manage Students</a>
 
-<?php if($role=="superadmin"){ ?>
-<a href="admin_management.php">👮 Admin Management</a>
+<?php if($admin_role == "superadmin"){ ?>
+<a href="admin_management.php">Admin Management</a>
 <?php } ?>
 
-<a href="logout.php">🚪 Logout</a>
-
+<a href="logout.php">Logout</a>
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
 <div class="topbar">
-
 <h2>Manage Students</h2>
 
 <form class="search-box">
-<input type="text" name="search" placeholder="Search..." value="<?php echo $search; ?>">
+<input name="search" value="<?php echo $search; ?>" placeholder="Search...">
 <button>Search</button>
 </form>
-
 </div>
 
 <div class="table-card">
-
 <table>
 
 <tr>
 <th>ID</th>
-<th>Student ID</th>
 <th>Name</th>
 <th>Email</th>
-<th>Phone</th>
-<th>Department</th>
-<th>Course</th>
-<th>Year</th>
+<th>Dept</th>
 <th>Fingerprint</th>
-<th>Action</th>
+<th>Actions</th>
 </tr>
 
 <?php while($row=mysqli_fetch_assoc($students)){ ?>
 
 <tr>
-<td><?php echo $row['id']; ?></td>
 <td><?php echo $row['student_id']; ?></td>
 <td><?php echo $row['name']; ?></td>
 <td><?php echo $row['email']; ?></td>
-<td><?php echo $row['phone']; ?></td>
 <td><?php echo $row['department']; ?></td>
-<td><?php echo $row['course']; ?></td>
-<td><?php echo $row['year']; ?></td>
+
 <td><span class="fp"><?php echo $row['fingerprint_id']; ?></span></td>
 
 <td>
-<div class="action">
 
-<!-- BIG EDIT -->
-<a class="btn-edit" href="?edit=<?php echo $row['id']; ?>">✏ Edit</a>
+<div class="actions">
 
-<!-- INLINE BUTTONS -->
-<a class="btn-small enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
+<div class="btn-row">
 
-<a class="btn-small delete" onclick="return confirm('Delete?')" href="?delete=<?php echo $row['id']; ?>">Delete</a>
+<a class="btn enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
+
+<a class="btn delete" href="?delete=<?php echo $row['id']; ?>" onclick="return confirm('Delete?')">Delete</a>
 
 </div>
+
+<a class="btn edit" href="?edit=<?php echo $row['id']; ?>">Edit</a>
+
+</div>
+
 </td>
 
 </tr>
@@ -364,15 +362,45 @@ th,td{
 <?php } ?>
 
 </table>
-
 </div>
 
 </div>
+
+<!-- EDIT MODAL -->
+<?php if($editData){ ?>
+<div class="modal">
+<div class="modal-content">
+
+<h3>Edit Student</h3>
+
+<form method="POST">
+
+<input type="hidden" name="id" value="<?php echo $editData['id']; ?>">
+
+<div class="form-grid">
+
+<input name="student_id" value="<?php echo $editData['student_id']; ?>">
+<input name="name" value="<?php echo $editData['name']; ?>">
+<input name="email" value="<?php echo $editData['email']; ?>">
+<input name="phone" value="<?php echo $editData['phone']; ?>">
+<input name="department" value="<?php echo $editData['department']; ?>">
+<input name="course" value="<?php echo $editData['course']; ?>">
+<input name="year" value="<?php echo $editData['year']; ?>">
+<input name="fingerprint_id" value="<?php echo $editData['fingerprint_id']; ?>">
+
+</div>
+
+<button class="save-btn" name="update_student">Update</button>
+
+</form>
+
+</div>
+</div>
+<?php } ?>
 
 <script>
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
-    document.getElementById("overlay").classList.toggle("active");
 }
 </script>
 
