@@ -8,16 +8,20 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-$admin_role = $_SESSION['role'] ?? 'admin';
+$admin_role = $_SESSION['role']; // superadmin check
 
 /* DELETE STUDENT */
+
 if(isset($_GET['delete'])){
 
     $id = $_GET['delete'];
 
     mysqli_query($conn,"
+    
     DELETE FROM students
+    
     WHERE id='$id'
+    
     ");
 
     header("Location: manage_students.php");
@@ -25,21 +29,31 @@ if(isset($_GET['delete'])){
 }
 
 /* UPDATE STUDENT */
+
 if(isset($_POST['update_student'])){
 
     $id = $_POST['id'];
 
     $student_id = $_POST['student_id'];
+
     $name = $_POST['name'];
+
     $email = $_POST['email'];
+
     $phone = $_POST['phone'];
+
     $department = $_POST['department'];
+
     $course = $_POST['course'];
+
     $year = $_POST['year'];
+
     $fingerprint_id = $_POST['fingerprint_id'];
 
     mysqli_query($conn,"
+    
     UPDATE students SET
+    
     student_id='$student_id',
     name='$name',
     email='$email',
@@ -48,7 +62,9 @@ if(isset($_POST['update_student'])){
     course='$course',
     year='$year',
     fingerprint_id='$fingerprint_id'
+    
     WHERE id='$id'
+    
     ");
 
     header("Location: manage_students.php");
@@ -56,6 +72,7 @@ if(isset($_POST['update_student'])){
 }
 
 /* SEARCH */
+
 $search = "";
 
 if(isset($_GET['search'])){
@@ -63,15 +80,27 @@ if(isset($_GET['search'])){
 }
 
 $students = mysqli_query($conn,"
+
 SELECT * FROM students
+
 WHERE
+
 student_id LIKE '%$search%'
-OR name LIKE '%$search%'
-OR department LIKE '%$search%'
+
+OR
+
+name LIKE '%$search%'
+
+OR
+
+department LIKE '%$search%'
+
 ORDER BY id DESC
+
 ");
 
 /* EDIT DATA */
+
 $editData = null;
 
 if(isset($_GET['edit'])){
@@ -79,8 +108,11 @@ if(isset($_GET['edit'])){
     $edit_id = $_GET['edit'];
 
     $editQuery = mysqli_query($conn,"
+    
     SELECT * FROM students
+    
     WHERE id='$edit_id'
+    
     ");
 
     $editData = mysqli_fetch_assoc($editQuery);
@@ -99,6 +131,8 @@ if(isset($_GET['edit'])){
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+
+/* ================= GLOBAL ================= */
 *{
     margin:0;
     padding:0;
@@ -109,17 +143,46 @@ if(isset($_GET['edit'])){
 body{
     background:#0f172a;
     color:white;
+    overflow-x:hidden;
 }
 
-/* TOPBAR MOBILE */
+/* ================= MOBILE TOPBAR ================= */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
-    padding:15px;
-    background:#1e293b;
+    align-items:center;
+    padding:15px 20px;
+    background:#0f172a;
+    position:sticky;
+    top:0;
+    z-index:5000;
 }
 
-/* SIDEBAR (MATCH DASHBOARD STYLE) */
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+}
+
+/* ================= OVERLAY ================= */
+.overlay{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:5500;
+}
+
+.overlay.active{
+    display:block;
+}
+
+/* ================= SIDEBAR ================= */
 .sidebar{
     width:260px;
     height:100vh;
@@ -128,120 +191,284 @@ body{
     left:0;
     background:#1e293b;
     padding:25px;
+    z-index:6000;
+    transition:0.25s ease;
 }
 
 .sidebar .logo{
     font-size:28px;
     font-weight:700;
-    margin-bottom:30px;
+    margin-bottom:40px;
 }
 
 .sidebar a{
     display:block;
-    padding:12px;
     color:white;
     text-decoration:none;
-    border-radius:8px;
+    padding:14px;
+    border-radius:10px;
+    margin-bottom:8px;
+    transition:0.2s;
 }
 
-.sidebar a:hover{
+.sidebar a:hover,
+.sidebar a.active{
     background:#2563eb;
 }
 
-/* SUPER ADMIN CONTROL */
-.superadmin-only{
-    display:block;
-}
-
-/* MAIN */
+/* ================= MAIN ================= */
 .main{
     margin-left:260px;
-    padding:25px;
+    padding:40px;
 }
 
-/* TABLE */
+/* ================= TOPBAR ================= */
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+    flex-wrap:wrap;
+    gap:15px;
+}
+
+.title{
+    font-size:34px;
+    font-weight:700;
+}
+
+/* ================= SEARCH ================= */
+.search-box{
+    display:flex;
+    gap:12px;
+}
+
+.search-box input{
+    width:280px;
+    padding:14px 18px;
+    border:none;
+    border-radius:14px;
+    background:rgba(255,255,255,0.08);
+    color:white;
+    outline:none;
+}
+
+.search-box input::placeholder{
+    color:#cbd5e1;
+}
+
+.search-box button{
+    border:none;
+    padding:14px 24px;
+    border-radius:14px;
+    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    color:white;
+    cursor:pointer;
+    font-weight:600;
+}
+
+/* ================= TABLE CARD ================= */
 .table-card{
-    background:#1e293b;
-    padding:20px;
-    border-radius:15px;
+    background:linear-gradient(135deg,rgba(30,41,59,0.95),rgba(15,23,42,0.95));
+    border:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(18px);
+    border-radius:24px;
+    padding:25px;
     overflow-x:auto;
+    box-shadow:0 10px 40px rgba(0,0,0,0.35);
 }
 
+/* ================= TABLE ================= */
 table{
     width:100%;
-    min-width:1100px;
-    border-collapse:collapse;
+    min-width:1200px;
+    border-collapse:separate;
+    border-spacing:0 14px;
 }
 
-th,td{
-    padding:12px;
+th{
     text-align:left;
+    padding:16px;
+    color:#93c5fd;
+    font-size:14px;
 }
 
-/* BUTTONS FIX */
-.btn-row{
+tbody tr{
+    background:linear-gradient(135deg,rgba(37,99,235,0.12),rgba(15,23,42,0.45));
+    transition:0.3s;
+    border:1px solid rgba(255,255,255,0.05);
+}
+
+tbody tr:hover{
+    transform:translateY(-2px);
+    background:linear-gradient(135deg,rgba(59,130,246,0.22),rgba(30,41,59,0.7));
+}
+
+td{
+    padding:20px 16px;
+}
+
+tbody tr td:first-child{
+    border-radius:16px 0 0 16px;
+}
+
+tbody tr td:last-child{
+    border-radius:0 16px 16px 0;
+}
+
+/* ================= BADGES ================= */
+.fp{
+    background:#10b981;
+    padding:8px 14px;
+    border-radius:30px;
+    font-size:12px;
+}
+
+/* ================= ACTION BUTTONS ================= */
+.action{
     display:flex;
     gap:10px;
     align-items:center;
+    flex-wrap:wrap;
 }
 
 .btn{
-    padding:8px 14px;
-    border-radius:8px;
+    padding:10px 15px;
+    border-radius:10px;
     text-decoration:none;
     color:white;
-    font-size:13px;
+    font-size:14px;
     font-weight:600;
+    border:none;
+    cursor:pointer;
     display:inline-block;
-    min-width:90px;
-    text-align:center;
 }
 
-.enroll{ background:#2563eb; }
-.edit{ background:#f59e0b; }
-.delete{ background:#ef4444; }
+.btn-enroll{
+    background:#2563eb;
+}
 
-/* MODAL */
+.edit{
+    background:#f59e0b;
+}
+
+.delete{
+    background:#ef4444;
+}
+
+/* ================= MODAL ================= */
 .modal{
     position:fixed;
     top:0;
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.7);
+    background:rgba(0,0,0,0.75);
     display:flex;
     justify-content:center;
     align-items:center;
+    z-index:9000;
 }
 
 .modal-content{
+    width:700px;
+    max-width:95%;
     background:#111827;
-    padding:25px;
-    border-radius:15px;
-    width:600px;
+    padding:35px;
+    border-radius:24px;
+    max-height:90vh;
+    overflow-y:auto;
 }
 
-/* MOBILE */
+.modal-title{
+    font-size:28px;
+    margin-bottom:25px;
+    font-weight:700;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.input-box label{
+    display:block;
+    margin-bottom:8px;
+    color:#cbd5e1;
+    font-size:14px;
+}
+
+.input-box input{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#1e293b;
+    color:white;
+    outline:none;
+}
+
+.save-btn{
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    color:white;
+    margin-top:25px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:600;
+}
+
+/* ================= MOBILE ================= */
 @media(max-width:700px){
 
-.sidebar{
-    left:-260px;
-    position:fixed;
-    transition:0.3s;
+    .topbar-mobile{
+        display:flex;
+    }
+
+    .sidebar{
+        left:-280px;
+    }
+
+    .sidebar.active{
+        left:0;
+    }
+
+    .main{
+        margin-left:0;
+        padding:15px;
+    }
+
+    .title{
+        font-size:24px;
+    }
+
+    .search-box{
+        width:100%;
+    }
+
+    .search-box input{
+        width:100%;
+        flex:1;
+    }
+
+    .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .modal-content{
+        padding:20px;
+    }
 }
 
-.sidebar.active{
-    left:0;
-}
-
-.main{
-    margin-left:0;
-}
-
-.topbar-mobile{
-    display:flex;
-}
-}
 </style>
 </head>
 
@@ -249,130 +476,216 @@ th,td{
 
 <!-- MOBILE TOPBAR -->
 <div class="topbar-mobile">
-    <button onclick="toggleSidebar()">☰</button>
-    <div>Manage Students</div>
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div>Smart Attendance</div>
 </div>
 
-<!-- SIDEBAR (SUPERADMIN FIXED) -->
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
-<div class="logo">📘 Smart Attendance</div>
+    <div class="logo">📘 Smart<br>Attendance</div>
 
-<a href="admin_dashboard.php">Dashboard</a>
-<a href="add_student.php">Add Student</a>
-<a href="manage_students.php">Manage Students</a>
-<a href="attendance.php">Attendance</a>
+    <a href="admin_dashboard.php">🏠 Dashboard</a>
+    <a href="add_student.php">➕ Add Student</a>
+    <a href="manage_students.php" class="active">👨‍🎓 Manage Students</a>
+    <a href="attendance.php">🗓️ Attendance</a>
 
-<?php if($admin_role === "superadmin"){ ?>
-<a href="admin_management.php">Admin Management</a>
-<?php } ?>
+    <!-- SUPERADMIN ONLY -->
+    <?php if($admin_role == "superadmin"){ ?>
+    <a href="admin_management.php">👮 Admin Management</a>
+    <?php } ?>
 
-<a href="logout.php">Logout</a>
+    <a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
 
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
-<h2>Manage Students</h2>
+    <div class="topbar">
 
-<div class="table-card">
+        <div class="title">Manage Students</div>
 
-<table>
+        <form class="search-box">
+            <input type="text"
+                   name="search"
+                   placeholder="Search students..."
+                   value="<?php echo htmlspecialchars($search); ?>">
+            <button type="submit">Search</button>
+        </form>
 
-<tr>
-<th>ID</th>
-<th>Student ID</th>
-<th>Name</th>
-<th>Email</th>
-<th>Phone</th>
-<th>Department</th>
-<th>Course</th>
-<th>Year</th>
-<th>Fingerprint</th>
-<th>Actions</th>
-</tr>
+    </div>
 
-<?php while($row = mysqli_fetch_assoc($students)){ ?>
+    <!-- TABLE -->
+    <div class="table-card">
 
-<tr>
+        <table>
 
-<td><?= $row['id'] ?></td>
-<td><?= $row['student_id'] ?></td>
-<td><?= $row['name'] ?></td>
-<td><?= $row['email'] ?></td>
-<td><?= $row['phone'] ?></td>
-<td><?= $row['department'] ?></td>
-<td><?= $row['course'] ?></td>
-<td><?= $row['year'] ?></td>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Department</th>
+                    <th>Course</th>
+                    <th>Year</th>
+                    <th>Fingerprint</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
 
-<td><?= $row['fingerprint_id'] ?></td>
+            <tbody>
 
-<td>
+            <?php while($row = mysqli_fetch_assoc($students)){ ?>
 
-<div class="btn-row">
+                <tr>
+                    <td><?php echo $row['id']; ?></td>
+                    <td><?php echo $row['student_id']; ?></td>
+                    <td><?php echo $row['name']; ?></td>
+                    <td><?php echo $row['email']; ?></td>
+                    <td><?php echo $row['phone']; ?></td>
+                    <td><?php echo $row['department']; ?></td>
+                    <td><?php echo $row['course']; ?></td>
+                    <td><?php echo $row['year']; ?></td>
+                    <td>
+                        <span class="fp"><?php echo $row['fingerprint_id']; ?></span>
+                    </td>
+                    <td>
+                        <div class="action">
 
-<a class="btn enroll"
-href="save_enroll.php?student_id=<?= $row['student_id'] ?>">
-Enroll
-</a>
+                            <a href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>"
+                               class="btn btn-enroll">
+                                Enroll Fingerprint
+                            </a>
 
-<a class="btn edit"
-href="manage_students.php?edit=<?= $row['id'] ?>">
-Edit
-</a>
+                            <a class="btn edit"
+                               href="manage_students.php?edit=<?php echo $row['id']; ?>">
+                                Edit
+                            </a>
 
-<a class="btn delete"
-href="manage_students.php?delete=<?= $row['id'] ?>"
-onclick="return confirm('Delete Student?')">
-Delete
-</a>
+                            <a class="btn delete"
+                               href="manage_students.php?delete=<?php echo $row['id']; ?>"
+                               onclick="return confirm('Delete Student?')">
+                                Delete
+                            </a>
 
-</div>
+                        </div>
+                    </td>
+                </tr>
 
-</td>
+            <?php } ?>
 
-</tr>
+            </tbody>
 
-<?php } ?>
+        </table>
 
-</table>
+    </div>
 
-</div>
 </div>
 
 <!-- EDIT MODAL -->
 <?php if($editData){ ?>
+
 <div class="modal">
-<div class="modal-content">
 
-<h3>Edit Student</h3>
+    <div class="modal-content">
 
-<form method="POST">
+        <div class="modal-title">Edit Student</div>
 
-<input type="hidden" name="id" value="<?= $editData['id'] ?>">
+        <form method="POST">
 
-<input name="student_id" value="<?= $editData['student_id'] ?>">
-<input name="name" value="<?= $editData['name'] ?>">
-<input name="email" value="<?= $editData['email'] ?>">
-<input name="phone" value="<?= $editData['phone'] ?>">
-<input name="department" value="<?= $editData['department'] ?>">
-<input name="course" value="<?= $editData['course'] ?>">
-<input name="year" value="<?= $editData['year'] ?>">
-<input name="fingerprint_id" value="<?= $editData['fingerprint_id'] ?>">
+            <input type="hidden" name="id" value="<?php echo $editData['id']; ?>">
 
-<button name="update_student">Update</button>
+            <div class="form-grid">
 
-</form>
+                <div class="input-box">
+                    <label>Student ID</label>
+                    <input type="text" name="student_id"
+                           value="<?php echo $editData['student_id']; ?>"
+                           placeholder="Student ID">
+                </div>
+
+                <div class="input-box">
+                    <label>Name</label>
+                    <input type="text" name="name"
+                           value="<?php echo $editData['name']; ?>"
+                           placeholder="Name">
+                </div>
+
+                <div class="input-box">
+                    <label>Email</label>
+                    <input type="email" name="email"
+                           value="<?php echo $editData['email']; ?>"
+                           placeholder="Email">
+                </div>
+
+                <div class="input-box">
+                    <label>Phone</label>
+                    <input type="text" name="phone"
+                           value="<?php echo $editData['phone']; ?>"
+                           placeholder="Phone">
+                </div>
+
+                <div class="input-box">
+                    <label>Department</label>
+                    <input type="text" name="department"
+                           value="<?php echo $editData['department']; ?>"
+                           placeholder="Department">
+                </div>
+
+                <div class="input-box">
+                    <label>Course</label>
+                    <input type="text" name="course"
+                           value="<?php echo $editData['course']; ?>"
+                           placeholder="Course">
+                </div>
+
+                <div class="input-box">
+                    <label>Year</label>
+                    <input type="text" name="year"
+                           value="<?php echo $editData['year']; ?>"
+                           placeholder="Year">
+                </div>
+
+                <div class="input-box">
+                    <label>Fingerprint ID</label>
+                    <input type="text" name="fingerprint_id"
+                           value="<?php echo $editData['fingerprint_id']; ?>"
+                           placeholder="Fingerprint ID">
+                </div>
+
+            </div>
+
+            <button type="submit" name="update_student" class="save-btn">
+                Update Student
+            </button>
+
+        </form>
+
+    </div>
 
 </div>
-</div>
+
 <?php } ?>
 
 <script>
+
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
 }
+
+function confirmLogout(){
+    if(confirm("Are you sure you want to logout?")){
+        window.location = "logout.php";
+    }
+}
+
 </script>
 
 </body>
