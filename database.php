@@ -1,11 +1,11 @@
 <?php
 
 
-$host = getenv("zephyr.proxy.rlwy.net");     
-$user = getenv("root");          
-$password = getenv("ghqjoJkRJyQkpxFDFnxlImvcemmUveKg");         
+$host = getenv("gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com");     
+$user = getenv("JmzF5kyqRvEwnxn.root");          
+$password = getenv("nRavqZA6tYW3LGNf");         
 $dbname = getenv("attendance_system");  
-$port = getenv("36443");
+$port = getenv("4000");
 // Create connection
 $conn = new mysqli($host, $user, $password, $dbname, $port);
 
