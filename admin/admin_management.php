@@ -27,14 +27,12 @@ if(isset($_POST['add_admin'])){
 /* DELETE ADMIN */
 if(isset($_GET['delete'])){
     $id = $_GET['delete'];
-
     $conn->query("DELETE FROM admin WHERE id=$id");
 
     header("Location: admin_management.php");
     exit();
 }
 
-/* FETCH ADMINS */
 $admins = $conn->query("SELECT * FROM admin");
 ?>
 
@@ -59,7 +57,7 @@ body{
     overflow-x:hidden;
 }
 
-/* TOP MOBILE BAR */
+/* TOP BAR (MOBILE) */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
@@ -68,7 +66,7 @@ body{
     background:rgba(15,23,42,0.95);
     position:sticky;
     top:0;
-    z-index:2000;
+    z-index:3000;
 }
 
 .hamburger{
@@ -79,17 +77,17 @@ body{
     cursor:pointer;
 }
 
-/* SIDEBAR */
+/* SIDEBAR (DESKTOP) */
 .sidebar{
     width:260px;
-    min-height:100vh;
+    height:100vh;
     position:fixed;
     top:0;
     left:0;
     background:rgba(15,23,42,0.95);
     padding:25px;
+    z-index:2000;
     transition:0.3s ease;
-    z-index:1500;
 }
 
 .sidebar .logo{
@@ -109,6 +107,18 @@ body{
 
 .sidebar a:hover{
     background:#2563eb;
+}
+
+/* OVERLAY */
+.overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    z-index:2500;
 }
 
 /* MAIN CONTENT */
@@ -166,7 +176,7 @@ th{
     text-decoration:none;
 }
 
-/* MOBILE FIX */
+/* MOBILE FIX (IMPORTANT) */
 @media(max-width:700px){
 
 .topbar-mobile{
@@ -180,13 +190,17 @@ th{
 
 /* sidebar hidden */
 .sidebar{
-    left:-260px;
+    transform:translateX(-100%);
 }
 
-/* sidebar open */
+/* sidebar active */
 .sidebar.active{
-    left:0;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    transform:translateX(0);
+}
+
+/* overlay active */
+.overlay.active{
+    display:block;
 }
 
 }
@@ -202,6 +216,9 @@ th{
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
     <div>Admin Management</div>
 </div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
@@ -286,9 +303,10 @@ Delete
 
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
 }
 
-/* close sidebar when clicking outside */
+/* close when clicking outside */
 document.addEventListener("click", function(e){
 
     let sidebar = document.getElementById("sidebar");
@@ -297,6 +315,7 @@ document.addEventListener("click", function(e){
     if(window.innerWidth <= 700){
         if(!sidebar.contains(e.target) && !button.contains(e.target)){
             sidebar.classList.remove("active");
+            document.getElementById("overlay").classList.remove("active");
         }
     }
 
