@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 include '../database.php';
 
@@ -9,15 +10,28 @@ if(isset($_POST['login'])){
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
 
-    $sql = "SELECT * FROM admin
-            WHERE username='$username'
-            AND password='$password'";
+    $stmt = $conn->prepare(
+        "SELECT * FROM admin WHERE username=? AND password=?"
+    );
 
-    $result = $conn->query($sql);
+    $stmt->bind_param("ss", $username, $password);
 
-    if($result && $result->num_rows > 0){
+    $stmt->execute();
 
-        $_SESSION['admin'] = $username;
+    $result = $stmt->get_result();
+
+    if($result->num_rows > 0){
+
+        $admin = $result->fetch_assoc();
+
+        $_SESSION['admin'] = $admin['username'];
+        $_SESSION['admin_id'] = $admin['id'];
+
+        if(isset($admin['role'])){
+            $_SESSION['role'] = $admin['role'];
+        }else{
+            $_SESSION['role'] = 'admin';
+        }
 
         header("Location: admin_dashboard.php");
         exit();
@@ -25,7 +39,6 @@ if(isset($_POST['login'])){
     }else{
 
         $error = "Invalid Username or Password";
-
     }
 }
 ?>
