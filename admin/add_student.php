@@ -1,9 +1,11 @@
 <?php
 
-$conn = mysqli_connect("gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com","JmzF5kyqRvEwnxn.root","nRavqZA6tYW3LGNf","attendance_system","4000");
+session_start();
+include '../database.php';
 
-if(!$conn){
-    die("Connection Failed");
+if(!isset($_SESSION['admin'])){
+    header("Location: admin_login.php");
+    exit();
 }
 
 $message = "";
