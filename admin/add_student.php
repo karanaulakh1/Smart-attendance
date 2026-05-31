@@ -415,7 +415,7 @@ body{
                     <div class="input-wrap">
                         <label>Course</label>
                         <input class="f-input" type="text" name="course"
-                               placeholder="e.g. B.Tech">
+                               placeholder="e.g. IOT">
                     </div>
 
                     <div class="input-wrap">
