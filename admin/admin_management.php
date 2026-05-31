@@ -9,229 +9,430 @@ if(!isset($_SESSION['admin'])){
 
 $admin_role = $_SESSION['role'];
 
+/* ONLY SUPERADMIN CAN ACCESS THIS PAGE */
+if($admin_role != "superadmin"){
+    header("Location: admin_dashboard.php");
+    exit();
+}
+
+$success = "";
+$error   = "";
+
 /* ADD ADMIN */
 if(isset($_POST['add_admin'])){
-
     $username = $_POST['username'];
-    $email = $_POST['email'];
+    $email    = $_POST['email'];
     $password = $_POST['password'];
-    $role = $_POST['role'];
+    $role     = $_POST['role'];
 
-    $conn->query("
-        INSERT INTO admin (username,email,password,role)
-        VALUES ('$username','$email','$password','$role')
-    ");
-
-    header("Location: admin_management.php");
-    exit();
+    // Check duplicate username
+    $check = $conn->query("SELECT id FROM admin WHERE username='$username'");
+    if($check->num_rows > 0){
+        $error = "Username already exists.";
+    } else {
+        $conn->query("
+            INSERT INTO admin (username, email, password, role)
+            VALUES ('$username','$email','$password','$role')
+        ");
+        $success = "Admin added successfully.";
+    }
 }
 
-/* DELETE ADMIN (ONLY SUPERADMIN SAFE CHECK) */
-if(isset($_GET['delete']) && $admin_role=="superadmin"){
-    $id = $_GET['delete'];
-    $conn->query("DELETE FROM admin WHERE id=$id");
-
-    header("Location: admin_management.php");
-    exit();
+/* DELETE ADMIN */
+if(isset($_GET['delete'])){
+    $id = (int)$_GET['delete'];
+    // Prevent deleting own account
+    if($id == $_SESSION['admin_id']){
+        $error = "You cannot delete your own account.";
+    } else {
+        $conn->query("DELETE FROM admin WHERE id=$id");
+        header("Location: admin_management.php?deleted=1");
+        exit();
+    }
 }
 
-$admins = $conn->query("SELECT * FROM admin");
+if(isset($_GET['deleted'])){ $success = "Admin deleted successfully."; }
+
+/* COUNTS */
+$totalAdmins      = $conn->query("SELECT COUNT(*) as c FROM admin")->fetch_assoc()['c'];
+$superAdminCount  = $conn->query("SELECT COUNT(*) as c FROM admin WHERE role='superadmin'")->fetch_assoc()['c'];
+$adminCount       = $conn->query("SELECT COUNT(*) as c FROM admin WHERE role='admin'")->fetch_assoc()['c'];
+
+$admins = $conn->query("SELECT * FROM admin ORDER BY id DESC");
 ?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<title>Admin Management</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+<title>Admin Management — Smart Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 
-/* ================= GLOBAL ================= */
-*{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-    font-family:Poppins;
+:root{
+    --bg:        #080d18;
+    --surface:   #0f1929;
+    --surface2:  #162035;
+    --border:    rgba(255,255,255,0.07);
+    --accent:    #3b6ef8;
+    --accent2:   #6ee7f7;
+    --green:     #22c55e;
+    --red:       #f43f5e;
+    --amber:     #f59e0b;
+    --purple:    #a78bfa;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --sidebar-w: 240px;
 }
+
+*{ margin:0; padding:0; box-sizing:border-box; }
 
 body{
-    background:#0f172a;
-    color:white;
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
 }
 
-/* ================= TOPBAR ================= */
-.topbar-mobile{
+/* ── MOBILE TOPBAR ── */
+.mob-bar{
     display:none;
-    justify-content:space-between;
     align-items:center;
-    padding:15px 20px;
-    background:#0f172a;
-    position:sticky;
-    top:0;
-    z-index:5000;
+    justify-content:space-between;
+    padding:14px 18px;
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:800;
 }
+.mob-bar .brand{ font-size:15px; font-weight:700; }
+.hamburger{
+    background:none; border:none; color:var(--text);
+    font-size:22px; cursor:pointer;
+    padding:4px 6px; border-radius:8px; transition:.15s;
+}
+.hamburger:hover{ background:var(--surface2); }
 
-/* ================= SIDEBAR ================= */
+/* ── OVERLAY ── */
+.overlay{
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.6); z-index:900;
+}
+.overlay.on{ display:block; }
+
+/* ── SIDEBAR ── */
 .sidebar{
-    width:260px;
+    width:var(--sidebar-w);
     height:100vh;
-    position:fixed;
-    top:0;
-    left:0;
-    background:#1e293b;
-    padding:25px;
+    position:fixed; top:0; left:0;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    padding:24px 16px;
     z-index:1000;
-    transition:0.25s ease;
+    transition:.25s ease;
+    display:flex; flex-direction:column;
+    overflow-y:auto;
 }
-
 .sidebar .logo{
-    font-size:28px;
-    font-weight:700;
-    margin-bottom:40px;
+    font-size:20px; font-weight:700;
+    line-height:1.4; padding:0 6px;
+    margin-bottom:32px; letter-spacing:-.3px;
 }
-
+.nav-section{
+    font-size:10px; font-weight:600;
+    color:var(--muted); letter-spacing:1.2px;
+    text-transform:uppercase;
+    padding:0 8px; margin:20px 0 8px;
+}
 .sidebar a{
-    display:block;
-    color:white;
-    text-decoration:none;
-    padding:14px;
-    border-radius:10px;
-    margin-bottom:8px;
+    display:flex; align-items:center; gap:10px;
+    color:var(--text); text-decoration:none;
+    padding:11px 12px; border-radius:10px;
+    margin-bottom:3px;
+    font-size:14px; font-weight:500;
+    transition:.15s;
+}
+.sidebar a:hover{ background:var(--surface2); }
+.sidebar a.active{ background:var(--accent); color:#fff; font-weight:600; }
+.sidebar .spacer{ flex:1; }
+.sidebar .logout{ color:#f87171; }
+.sidebar .logout:hover{ background:rgba(244,63,94,.12); }
+
+/* ── MAIN ── */
+.main{
+    margin-left:var(--sidebar-w);
+    padding:36px 40px;
+    min-height:100vh;
 }
 
-.sidebar a:hover{
-    background:#2563eb;
+/* ── TOP BAR ── */
+.top-bar{
+    display:flex; align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+    margin-bottom:32px;
+}
+.page-title{
+    font-size:28px; font-weight:700;
+    letter-spacing:-.5px;
+}
+.superadmin-pill{
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(167,139,250,.12);
+    border:1px solid rgba(167,139,250,.25);
+    color:var(--purple);
+    padding:8px 16px; border-radius:50px;
+    font-size:13px; font-weight:600;
 }
 
-/* ================= MAIN ================= */
-.container{
-    margin-left:260px;
-    padding:30px;
+/* ── ALERT ── */
+.alert{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; border-radius:14px;
+    margin-bottom:22px;
+    font-size:14px; font-weight:500;
+    animation:slideIn .3s ease;
+}
+@keyframes slideIn{
+    from{ opacity:0; transform:translateY(-8px); }
+    to{   opacity:1; transform:translateY(0);    }
+}
+.alert-ok { background:rgba(34,197,94,.12);  border:1px solid rgba(34,197,94,.25);  color:#4ade80; }
+.alert-err{ background:rgba(244,63,94,.10);  border:1px solid rgba(244,63,94,.2);   color:#fb7185; }
+
+/* ── STAT CARDS ── */
+.stats-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    margin-bottom:28px;
+}
+.stat{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:20px 22px;
+    position:relative; overflow:hidden;
+    transition:.2s;
+}
+.stat:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,.13); }
+.stat::before{
+    content:''; position:absolute;
+    top:0; left:0; right:0; height:3px;
+}
+.stat.s-total::before   { background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+.stat.s-super::before   { background:linear-gradient(90deg,var(--purple),#c4b5fd); }
+.stat.s-admin::before   { background:linear-gradient(90deg,var(--amber),#fde68a); }
+.stat-icon{ font-size:26px; margin-bottom:10px; }
+.stat-val{
+    font-size:34px; font-weight:700;
+    letter-spacing:-1px; line-height:1;
+    margin-bottom:4px;
+}
+.stat-label{
+    font-size:11px; color:var(--muted);
+    font-weight:600; text-transform:uppercase; letter-spacing:.8px;
 }
 
-/* ================= FORM (SAME AS ADD STUDENT STYLE) ================= */
-.form-box{
-    background:#1e293b;
-    padding:25px;
-    border-radius:25px;
-    margin-bottom:25px;
-    max-width:900px;
+/* ── CARD ── */
+.card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:26px;
+    margin-bottom:24px;
+}
+.card-head{
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:22px;
+}
+.card-head h2{
+    font-size:16px; font-weight:700; letter-spacing:-.2px;
+}
+.card-head .badge-pill{
+    background:var(--surface2);
+    border:1px solid var(--border);
+    padding:3px 10px; border-radius:50px;
+    font-size:11px; font-weight:600; color:var(--muted);
+    font-family:'DM Mono',monospace;
 }
 
-input,select{
-    width:100%;
-    padding:14px;
-    margin:8px 0;
-    border:none;
+/* ── FORM GRID ── */
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+}
+.input-wrap{ display:flex; flex-direction:column; gap:6px; }
+.input-wrap label{
+    font-size:12px; font-weight:600;
+    color:var(--muted); text-transform:uppercase; letter-spacing:.7px;
+}
+.f-input, .f-select{
+    padding:12px 14px;
+    background:var(--surface2);
+    border:1px solid var(--border);
     border-radius:12px;
-    background:#0f172a;
-    color:white;
-}
-
-button{
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    font-size:14px;
+    outline:none;
+    transition:.15s;
     width:100%;
-    padding:14px;
-    border:none;
-    border-radius:12px;
-    background:#2563eb;
-    color:white;
-    font-size:15px;
-    font-weight:600;
+}
+.f-input:focus, .f-select:focus{ border-color:var(--accent); }
+.f-select{
+    appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    padding-right:36px;
     cursor:pointer;
 }
+.form-grid .full{ grid-column:1 / -1; }
 
-/* ================= TABLE ================= */
+.submit-btn{
+    width:100%; margin-top:6px;
+    padding:13px;
+    border:none; border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),#5b8af9);
+    color:#fff;
+    font-family:'DM Sans',sans-serif;
+    font-size:14px; font-weight:700;
+    cursor:pointer; transition:.2s;
+    box-shadow:0 4px 18px rgba(59,110,248,.3);
+}
+.submit-btn:hover{ transform:translateY(-2px); }
+
+/* ── TABLE ── */
+.table-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+}
 table{
-    width:100%;
+    width:100%; min-width:520px;
     border-collapse:collapse;
-    background:#1e293b;
-    border-radius:20px;
-    overflow:hidden;
+}
+thead th{
+    padding:11px 14px;
+    font-size:11px; font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase; letter-spacing:.8px;
+    text-align:left; white-space:nowrap;
+    border-bottom:1px solid var(--border);
+}
+tbody td{
+    padding:15px 14px;
+    font-size:14px;
+    border-bottom:1px solid rgba(255,255,255,.03);
+    vertical-align:middle;
+}
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:hover td{ background:rgba(255,255,255,.02); }
+
+/* admin info cell */
+.admin-cell{ display:flex; align-items:center; gap:12px; }
+.admin-avatar{
+    width:38px; height:38px;
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; font-weight:700;
+    flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;
+}
+.admin-avatar.sa{
+    background:linear-gradient(135deg,var(--purple),#c4b5fd);
+}
+.admin-info{ display:flex; flex-direction:column; gap:2px; }
+.admin-name{ font-weight:600; font-size:14px; }
+.admin-email{ font-size:11px; color:var(--muted); }
+
+/* role badge */
+.role-badge{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 13px; border-radius:50px;
+    font-size:12px; font-weight:700; letter-spacing:.3px;
+}
+.role-super{
+    background:rgba(167,139,250,.15);
+    color:var(--purple);
+    border:1px solid rgba(167,139,250,.25);
+}
+.role-admin{
+    background:rgba(245,158,11,.12);
+    color:#fbbf24;
+    border:1px solid rgba(245,158,11,.2);
 }
 
-th,td{
-    padding:14px;
-    text-align:center;
-    border-bottom:1px solid rgba(255,255,255,0.08);
+/* id cell */
+.id-cell{
+    font-family:'DM Mono',monospace;
+    font-size:12px; color:var(--muted);
 }
 
-th{
-    background:#334155;
-}
-
-.delete{
-    color:#ef4444;
+/* action buttons */
+.btn-del{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:7px 14px; border-radius:9px;
+    background:rgba(244,63,94,.1);
+    border:1px solid rgba(244,63,94,.2);
+    color:#fb7185;
+    font-size:13px; font-weight:600;
     text-decoration:none;
+    transition:.15s;
+    cursor:pointer;
+}
+.btn-del:hover{
+    background:rgba(244,63,94,.2);
+    transform:translateY(-1px);
+}
+.no-access{
+    font-size:12px; color:var(--muted);
+    font-style:italic;
 }
 
-/* ================= MOBILE ================= */
-@media(max-width:700px){
+/* ── EMPTY ── */
+.empty{
+    text-align:center; padding:50px 20px;
+}
+.empty-icon{ font-size:44px; margin-bottom:12px; opacity:.4; }
+.empty p{ color:var(--muted); font-size:14px; }
 
-.topbar-mobile{
-    display:flex;
+/* ── MOBILE ── */
+@media(max-width:768px){
+    .mob-bar{ display:flex; }
+    .sidebar{ left:-280px; }
+    .sidebar.on{ left:0; }
+    .main{ margin-left:0; padding:16px; }
+
+    .stats-row{ grid-template-columns:1fr 1fr; gap:12px; }
+    .stat{ padding:16px; }
+    .stat-val{ font-size:26px; }
+
+    .page-title{ font-size:22px; }
+
+    .form-grid{ grid-template-columns:1fr; }
+    .form-grid .full{ grid-column:1; }
+
+    thead th, tbody td{ padding:11px 10px; font-size:13px; }
+
+    .admin-email{ display:none; }
 }
 
-/* MAIN FULL WIDTH */
-.container{
-    margin-left:0;
-    padding:15px;
+@media(max-width:420px){
+    .stats-row{ grid-template-columns:1fr 1fr; }
+    .stat-val{ font-size:22px; }
+    .stat-label{ font-size:10px; }
 }
-
-/* SIDEBAR SLIDE (LIKE ADD STUDENT) */
-.sidebar{
-    position:fixed;
-    left:-280px;
-    top:0;
-    height:100vh;
-    width:260px;
-}
-
-.sidebar.active{
-    left:0;
-}
-
-/* SMALLER FORM CARD */
-.form-box{
-    padding:18px;
-}
-
-/* TABLE SMALL FIX */
-table{
-    font-size:13px;
-}
-
-}
-
-/* OVERLAY */
-.overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
-    display:none;
-    z-index:4000;
-}
-
-.overlay.active{
-    display:block;
-}
-
 </style>
-
 </head>
-
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar-mobile">
-    <button onclick="toggleSidebar()" style="font-size:26px;background:none;border:none;color:white;">☰</button>
-    <div>Admin Management</div>
+<!-- MOBILE BAR -->
+<div class="mob-bar">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="brand">📘 Smart Attendance</div>
+    <div></div>
 </div>
 
 <!-- OVERLAY -->
@@ -239,92 +440,191 @@ table{
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
+    <div class="logo">📘 Smart<br>Attendance</div>
 
-<div class="logo">📘 Smart<br>Attendance</div>
+    <div class="nav-section">Menu</div>
+    <a href="admin_dashboard.php">🏠 Dashboard</a>
+    <a href="add_student.php">➕ Add Student</a>
+    <a href="manage_students.php">👨‍🎓 Manage Students</a>
+    <a href="attendance.php">🗓️ Attendance</a>
+    <?php if($admin_role == "superadmin"){ ?>
+    <a href="admin_management.php" class="active">👮 Admin Management</a>
+    <?php } ?>
 
-<a href="admin_dashboard.php">🏠 Dashboard</a>
-<a href="add_student.php">➕ Add Student</a>
-<a href="manage_students.php">👨‍🎓 Manage Students</a>
-<a href="attendance.php">🗓️ Attendance</a>
-
-<?php if($admin_role=="superadmin"){ ?>
-<a href="admin_management.php">👮 Admin Management</a>
-<?php } ?>
-
-<a href="logout.php">🚪 Logout</a>
-
+    <div class="spacer"></div>
+    <div class="nav-section">Account</div>
+    <a href="javascript:void(0);" onclick="confirmLogout()" class="logout">🚪 Logout</a>
 </div>
 
 <!-- MAIN -->
-<div class="container">
+<div class="main">
 
-<h2>👮 Admin Management</h2>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="page-title">Admin Management</div>
+        <div class="superadmin-pill">👑 Super Admin Panel</div>
+    </div>
 
-<!-- FORM -->
-<div class="form-box">
+    <!-- ALERTS -->
+    <?php if($success){ ?>
+    <div class="alert alert-ok">✅ <?php echo $success; ?></div>
+    <?php } ?>
+    <?php if($error){ ?>
+    <div class="alert alert-err">⚠️ <?php echo $error; ?></div>
+    <?php } ?>
 
-<h3>Add New Admin</h3>
+    <!-- STATS -->
+    <div class="stats-row">
+        <div class="stat s-total">
+            <div class="stat-icon">👥</div>
+            <div class="stat-val"><?php echo $totalAdmins; ?></div>
+            <div class="stat-label">Total Admins</div>
+        </div>
+        <div class="stat s-super">
+            <div class="stat-icon">👑</div>
+            <div class="stat-val"><?php echo $superAdminCount; ?></div>
+            <div class="stat-label">Super Admins</div>
+        </div>
+        <div class="stat s-admin">
+            <div class="stat-icon">👮</div>
+            <div class="stat-val"><?php echo $adminCount; ?></div>
+            <div class="stat-label">Admins</div>
+        </div>
+    </div>
 
-<form method="POST">
+    <!-- ADD ADMIN CARD -->
+    <div class="card">
+        <div class="card-head">
+            <span>➕</span>
+            <h2>Add New Admin</h2>
+        </div>
 
-<input type="text" name="username" placeholder="Username" required>
-<input type="email" name="email" placeholder="Email" required>
-<input type="text" name="password" placeholder="Password" required>
+        <form method="POST">
+            <div class="form-grid">
 
-<select name="role">
-    <option value="admin">Admin</option>
-    <option value="superadmin">Super Admin</option>
-</select>
+                <div class="input-wrap">
+                    <label>Username</label>
+                    <input class="f-input" type="text" name="username" placeholder="e.g. john_admin" required>
+                </div>
 
-<button type="submit" name="add_admin">Add Admin</button>
+                <div class="input-wrap">
+                    <label>Email</label>
+                    <input class="f-input" type="email" name="email" placeholder="admin@school.com" required>
+                </div>
 
-</form>
+                <div class="input-wrap">
+                    <label>Password</label>
+                    <input class="f-input" type="password" name="password" placeholder="••••••••" required>
+                </div>
 
-</div>
+                <div class="input-wrap">
+                    <label>Role</label>
+                    <select class="f-select" name="role">
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                    </select>
+                </div>
 
-<!-- TABLE -->
-<table>
+                <div class="full">
+                    <button type="submit" name="add_admin" class="submit-btn">➕ Add Admin</button>
+                </div>
 
-<tr>
-<th>ID</th>
-<th>Username</th>
-<th>Email</th>
-<th>Role</th>
-<th>Action</th>
-</tr>
+            </div>
+        </form>
+    </div>
 
-<?php while($row=$admins->fetch_assoc()){ ?>
+    <!-- ADMINS TABLE CARD -->
+    <div class="card">
+        <div class="card-head">
+            <span>📋</span>
+            <h2>All Admins</h2>
+            <span class="badge-pill"><?php echo $totalAdmins; ?> total</span>
+        </div>
 
-<tr>
-<td><?php echo $row['id']; ?></td>
-<td><?php echo $row['username']; ?></td>
-<td><?php echo $row['email']; ?></td>
-<td><?php echo $row['role']; ?></td>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Admin</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                $i = 1;
+                $admins->data_seek(0);
+                while($row = $admins->fetch_assoc()):
+                    $isSelf = ($row['id'] == ($_SESSION['admin_id'] ?? 0));
+                    $initial = strtoupper(substr($row['username'], 0, 1));
+                    $isSuper = $row['role'] == 'superadmin';
+                ?>
+                <tr>
+                    <td class="id-cell"><?php echo str_pad($i++, 2, '0', STR_PAD_LEFT); ?></td>
+                    <td>
+                        <div class="admin-cell">
+                            <div class="admin-avatar <?php echo $isSuper ? 'sa' : ''; ?>">
+                                <?php echo $initial; ?>
+                            </div>
+                            <div class="admin-info">
+                                <span class="admin-name">
+                                    <?php echo htmlspecialchars($row['username']); ?>
+                                    <?php if($isSelf){ ?><span style="font-size:11px;color:var(--accent2);margin-left:6px;">(you)</span><?php } ?>
+                                </span>
+                                <span class="admin-email"><?php echo htmlspecialchars($row['email']); ?></span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="role-badge <?php echo $isSuper ? 'role-super' : 'role-admin'; ?>">
+                            <?php echo $isSuper ? '👑 Super Admin' : '👮 Admin'; ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if(!$isSelf): ?>
+                        <a class="btn-del"
+                           href="?delete=<?php echo $row['id']; ?>"
+                           onclick="return confirmDelete('<?php echo htmlspecialchars($row['username']); ?>')">
+                           🗑 Delete
+                        </a>
+                        <?php else: ?>
+                        <span class="no-access">Current session</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
 
-<td>
-<?php if($admin_role=="superadmin"){ ?>
-<a class="delete" href="?delete=<?php echo $row['id']; ?>"
-onclick="return confirm('Delete admin?')">Delete</a>
-<?php } else { ?>
-<span style="color:#94a3b8;">No Access</span>
-<?php } ?>
-</td>
-
-</tr>
-
-<?php } ?>
-
-</table>
+                <?php if($totalAdmins == 0): ?>
+                <tr>
+                    <td colspan="4">
+                        <div class="empty">
+                            <div class="empty-icon">👤</div>
+                            <p>No admins found.</p>
+                        </div>
+                    </td>
+                </tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
 </div>
 
 <script>
-
 function toggleSidebar(){
-    document.getElementById("sidebar").classList.toggle("active");
-    document.getElementById("overlay").classList.toggle("active");
+    document.getElementById('sidebar').classList.toggle('on');
+    document.getElementById('overlay').classList.toggle('on');
 }
-
+function confirmLogout(){
+    if(confirm("Are you sure you want to logout?")){
+        window.location = "logout.php";
+    }
+}
+function confirmDelete(name){
+    return confirm("Delete admin \"" + name + "\"? This cannot be undone.");
+}
 </script>
 
 </body>
