@@ -1,6 +1,6 @@
 <?php
 
-$conn = mysqli_connect("zephyr.proxy.rlwy.net","root","ghqjoJkRJyQkpxFDFnxlImvcemmUveKg","attendance_system");
+$conn = mysqli_connect("gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com","JmzF5kyqRvEwnxn.root","nRavqZA6tYW3LGNf","attendance_system");
 
 if(!$conn){
     die("Connection Failed");
