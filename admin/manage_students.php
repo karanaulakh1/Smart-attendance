@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 include '../database.php';
 
@@ -7,29 +8,48 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-/* DELETE */
+/* SUPER ADMIN FACTOR */
+$role = $_SESSION['role'] ?? 'admin';
+
+/* DELETE STUDENT */
 if(isset($_GET['delete'])){
+
     $id = $_GET['delete'];
-    mysqli_query($conn,"DELETE FROM students WHERE id='$id'");
+
+    mysqli_query($conn,"
+    DELETE FROM students
+    WHERE id='$id'
+    ");
+
     header("Location: manage_students.php");
     exit();
 }
 
-/* UPDATE */
+/* UPDATE STUDENT */
 if(isset($_POST['update_student'])){
 
     $id = $_POST['id'];
 
-    mysqli_query($conn,"UPDATE students SET
-        student_id='{$_POST['student_id']}',
-        name='{$_POST['name']}',
-        email='{$_POST['email']}',
-        phone='{$_POST['phone']}',
-        department='{$_POST['department']}',
-        course='{$_POST['course']}',
-        year='{$_POST['year']}',
-        fingerprint_id='{$_POST['fingerprint_id']}'
-        WHERE id='$id'
+    $student_id = $_POST['student_id'];
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+    $phone = $_POST['phone'];
+    $department = $_POST['department'];
+    $course = $_POST['course'];
+    $year = $_POST['year'];
+    $fingerprint_id = $_POST['fingerprint_id'];
+
+    mysqli_query($conn,"
+    UPDATE students SET
+    student_id='$student_id',
+    name='$name',
+    email='$email',
+    phone='$phone',
+    department='$department',
+    course='$course',
+    year='$year',
+    fingerprint_id='$fingerprint_id'
+    WHERE id='$id'
     ");
 
     header("Location: manage_students.php");
@@ -37,7 +57,11 @@ if(isset($_POST['update_student'])){
 }
 
 /* SEARCH */
-$search = $_GET['search'] ?? "";
+$search = "";
+
+if(isset($_GET['search'])){
+    $search = $_GET['search'];
+}
 
 $students = mysqli_query($conn,"
 SELECT * FROM students
@@ -49,211 +73,218 @@ ORDER BY id DESC
 
 /* EDIT */
 $editData = null;
+
 if(isset($_GET['edit'])){
-    $id = $_GET['edit'];
-    $res = mysqli_query($conn,"SELECT * FROM students WHERE id='$id'");
-    $editData = mysqli_fetch_assoc($res);
+    $edit_id = $_GET['edit'];
+
+    $editQuery = mysqli_query($conn,"
+    SELECT * FROM students
+    WHERE id='$edit_id'
+    ");
+
+    $editData = mysqli_fetch_assoc($editQuery);
 }
+
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
+
 <title>Manage Students</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 
-/* ===== GLOBAL ===== */
-*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins;}
+/* SAME THEME (UNCHANGED) */
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+html{overflow-x:hidden;}
+
 body{
     background:linear-gradient(135deg,#0f172a,#1e293b,#312e81);
+    min-height:100vh;
     color:white;
     overflow-x:hidden;
 }
 
-/* ===== TOPBAR MOBILE ===== */
+.container{display:flex;}
+
+/* TOPBAR MOBILE */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
+    align-items:center;
     padding:15px 20px;
     background:rgba(15,23,42,0.95);
     position:sticky;
     top:0;
+    z-index:1000;
+}
+
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+}
+
+/* SIDEBAR (FIXED LIKE ADD STUDENT) */
+.sidebar{
+    width:260px;
+    min-height:100vh;
+    background:linear-gradient(180deg,rgba(15,23,42,0.98),rgba(30,41,59,0.96));
+    backdrop-filter:blur(20px);
+    border-right:1px solid rgba(255,255,255,0.06);
+    padding:28px 18px;
+    position:fixed;
+    top:0;
+    left:0;
+    transition:0.3s ease;
     z-index:2000;
 }
 
-/* ===== SIDEBAR ===== */
-.sidebar{
-    width:260px;
-    height:100vh;
-    position:fixed;
-    left:0;
-    top:0;
-    padding:25px;
-    background:linear-gradient(180deg,#0f172a,#1e293b);
-    border-right:1px solid rgba(255,255,255,0.08);
-}
-
 .logo{
-    font-size:28px;
+    font-size:30px;
     font-weight:700;
-    margin-bottom:40px;
+    margin-bottom:50px;
+    padding-left:8px;
 }
 
-.sidebar a{
+/* MENU */
+.menu a{
     display:block;
+    color:white;
     padding:14px;
-    margin-bottom:8px;
     border-radius:12px;
     text-decoration:none;
-    color:white;
 }
 
-.sidebar a:hover{
-    background:#2563eb;
-}
-
-/* ===== MAIN ===== */
+/* MAIN */
 .main{
     margin-left:260px;
-    padding:30px;
+    width:calc(100% - 260px);
+    padding:40px;
 }
 
+/* TOPBAR */
 .topbar{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:25px;
+    margin-bottom:30px;
 }
 
 .title{
-    font-size:30px;
+    font-size:34px;
     font-weight:700;
 }
 
-/* ===== SEARCH ===== */
+/* SEARCH */
 .search-box{
     display:flex;
-    gap:10px;
+    gap:12px;
 }
 
 .search-box input{
-    padding:12px;
-    border-radius:10px;
+    width:280px;
+    padding:14px;
+    border-radius:14px;
     border:none;
-    width:260px;
     background:rgba(255,255,255,0.08);
     color:white;
 }
 
 .search-box button{
-    padding:12px 18px;
+    padding:14px 24px;
     border:none;
-    border-radius:10px;
+    border-radius:14px;
     background:#2563eb;
     color:white;
+    font-weight:600;
 }
 
-/* ===== TABLE ===== */
+/* TABLE */
 .table-card{
-    background:rgba(30,41,59,0.8);
-    padding:20px;
-    border-radius:20px;
+    background:rgba(30,41,59,0.9);
+    padding:25px;
+    border-radius:24px;
     overflow-x:auto;
 }
 
 table{
     width:100%;
-    border-collapse:collapse;
-    min-width:900px;
+    min-width:1200px;
+    border-collapse:separate;
+    border-spacing:0 14px;
 }
 
-th,td{
-    padding:12px;
+th{
     text-align:left;
+    padding:16px;
+    color:#93c5fd;
+    font-size:14px;
 }
 
-/* ===== BUTTON ROW FIX ===== */
-.action-box{
+td{
+    padding:14px;
+}
+
+/* ACTION BUTTON FIX */
+.action{
     display:flex;
-    gap:8px;
+    gap:6px;
     align-items:center;
-    flex-wrap:wrap;
 }
 
 .btn{
-    padding:8px 12px;
-    border:none;
+    padding:7px 10px;
     border-radius:8px;
-    font-size:12px;
-    cursor:pointer;
-    text-decoration:none;
+    font-size:11px;
+    font-weight:600;
     color:white;
+    text-decoration:none;
 }
 
-.enroll{background:#2563eb;}
+.enroll-btn{background:#2563eb;}
 .delete{background:#ef4444;}
-.edit{background:#f59e0b; padding:8px 14px;}
+.edit{background:#f59e0b;}
 
-/* ===== MODAL ===== */
-.modal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.7);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.modal-content{
-    background:#111827;
-    padding:25px;
-    border-radius:20px;
-    width:600px;
-}
-
-/* ===== MOBILE ===== */
-@media(max-width:768px){
+/* MOBILE FIX */
+@media(max-width:700px){
 
 .topbar-mobile{display:flex;}
 
 .sidebar{
     position:fixed;
-    left:-280px;
-    transition:0.3s;
-    z-index:3000;
+    left:-260px;
+    height:100%;
+    width:260px;
 }
 
-.sidebar.active{
-    left:0;
-}
+.sidebar.active{left:0;}
 
 .main{
     margin-left:0;
+    width:100%;
     padding:15px;
 }
 
-.topbar{
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
-}
-
-/* SEARCH MOBILE FIX */
 .search-box{
     flex-direction:column;
 }
 
 .search-box input{
     width:100%;
-}
-
-.action-box{
-    flex-direction:row;
-    flex-wrap:wrap;
 }
 
 }
@@ -263,37 +294,46 @@ th,td{
 
 <body>
 
-<!-- MOBILE TOPBAR -->
+<!-- TOPBAR -->
 <div class="topbar-mobile">
-    <button onclick="toggleSidebar()" style="font-size:24px;background:none;border:none;color:white;">☰</button>
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
     <div>Manage Students</div>
 </div>
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
-    <div class="logo">📘 Smart<br>Attendance</div>
 
-    <a href="admin_dashboard.php">Dashboard</a>
-    <a href="add_student.php">Add Student</a>
-    <a href="manage_students.php">Manage Students</a>
-    <a href="attendance.php">Attendance</a>
-    <a href="admin_management.php">Admin</a>
-    <a href="logout.php">Logout</a>
+<div class="logo">📘 Smart<br>Attendance</div>
+
+<a href="admin_dashboard.php">🏠 Dashboard</a>
+<a href="add_student.php">➕ Add Student</a>
+<a href="manage_students.php">👨‍🎓 Manage Students</a>
+<a href="attendance.php">🗓️ Attendance</a>
+
+<?php if($role === "superadmin"){ ?>
+<a href="admin_management.php">👮 Admin Management</a>
+<?php } ?>
+
+<a href="logout.php">🚪 Logout</a>
+
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
 <div class="topbar">
-    <div class="title">Manage Students</div>
 
-    <form class="search-box">
-        <input name="search" value="<?= $search ?>" placeholder="Search">
-        <button>Search</button>
-    </form>
+<div class="title">Manage Students</div>
+
+<form class="search-box">
+<input name="search" value="<?php echo $search; ?>" placeholder="Search">
+<button>Search</button>
+</form>
+
 </div>
 
 <div class="table-card">
+
 <table>
 
 <tr>
@@ -307,21 +347,20 @@ th,td{
 <?php while($row=mysqli_fetch_assoc($students)){ ?>
 
 <tr>
-<td><?= $row['id'] ?></td>
-<td><?= $row['name'] ?></td>
-<td><?= $row['department'] ?></td>
-<td><?= $row['fingerprint_id'] ?></td>
+
+<td><?php echo $row['id']; ?></td>
+<td><?php echo $row['name']; ?></td>
+<td><?php echo $row['department']; ?></td>
+<td><?php echo $row['fingerprint_id']; ?></td>
 
 <td>
-<div class="action-box">
+<div class="action">
 
-<a class="btn enroll" href="save_enroll.php?student_id=<?= $row['student_id'] ?>">
-Enroll
-</a>
+<a class="btn enroll-btn" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
 
-<a class="btn delete" href="?delete=<?= $row['id'] ?>">Delete</a>
+<a class="btn delete" href="?delete=<?php echo $row['id']; ?>">Delete</a>
 
-<a class="btn edit" href="?edit=<?= $row['id'] ?>">Edit</a>
+<a class="btn edit" href="?edit=<?php echo $row['id']; ?>">Edit</a>
 
 </div>
 </td>
@@ -331,29 +370,12 @@ Enroll
 <?php } ?>
 
 </table>
-</div>
 
 </div>
 
-<?php if($editData){ ?>
-<div class="modal">
-<div class="modal-content">
-<h3>Edit Student</h3>
-
-<form method="POST">
-<input type="hidden" name="id" value="<?= $editData['id'] ?>">
-
-<input name="name" value="<?= $editData['name'] ?>">
-<input name="department" value="<?= $editData['department'] ?>">
-<input name="fingerprint_id" value="<?= $editData['fingerprint_id'] ?>">
-
-<button type="submit" name="update_student">Update</button>
-</form>
-
 </div>
-</div>
-<?php } ?>
 
+<!-- JS -->
 <script>
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
