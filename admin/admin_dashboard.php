@@ -89,7 +89,7 @@ body{
     background:#0f172a;
     position:sticky;
     top:0;
-    z-index:4000;
+    z-index:5000;
 }
 
 .hamburger{
@@ -99,7 +99,7 @@ body{
     color:white;
 }
 
-/* ================= SIDEBAR ================= */
+/* ================= SIDEBAR (DESKTOP) ================= */
 .sidebar{
     width:260px;
     height:100vh;
@@ -136,7 +136,7 @@ body{
     padding:30px;
 }
 
-/* TOP BAR */
+/* TOP BAR CONTENT */
 .top-bar{
     display:flex;
     justify-content:space-between;
@@ -205,21 +205,24 @@ body{
     border-radius:20px;
 }
 
+/* ================= OVERLAY ================= */
+.overlay{
+    display:none;
+}
+
 /* ================= MOBILE FIX ================= */
 @media(max-width:700px){
 
-/* topbar */
 .topbar-mobile{
     display:flex;
 }
 
-/* main */
 .main{
     margin-left:0;
     padding:15px;
 }
 
-/* stats SMALL CARDS */
+/* SMALLER CARDS */
 .stats{
     grid-template-columns:repeat(2,1fr);
     gap:12px;
@@ -227,14 +230,13 @@ body{
 
 .stat-card{
     padding:15px;
-    border-radius:15px;
 }
 
 .stat-card h2{
     font-size:24px;
 }
 
-/* charts */
+/* SINGLE COLUMN CHART */
 .charts{
     grid-template-columns:1fr;
 }
@@ -249,7 +251,7 @@ body{
     font-size:13px;
 }
 
-/* ================= POPUP SIDEBAR ================= */
+/* OVERLAY */
 .overlay{
     position:fixed;
     top:0;
@@ -257,7 +259,7 @@ body{
     width:100%;
     height:100%;
     background:rgba(0,0,0,0.6);
-    z-index:2500;
+    z-index:4000;
     display:none;
 }
 
@@ -265,26 +267,21 @@ body{
     display:block;
 }
 
-/* clean pop animation */
+/* ================= LEFT SLIDE SIDEBAR (FIXED UX) ================= */
 .sidebar{
     position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%) scale(0.75);
-    opacity:0;
-    visibility:hidden;
-    width:90%;
-    max-width:320px;
-    border-radius:16px;
-    z-index:3000;
+    left:-280px;
+    top:0;
+    height:100vh;
+    width:260px;
+    background:#1e293b;
     transition:0.25s ease;
+    z-index:5000;
 }
 
-/* active */
+/* ACTIVE */
 .sidebar.active{
-    transform:translate(-50%,-50%) scale(1);
-    opacity:1;
-    visibility:visible;
+    left:0;
 }
 
 }
@@ -295,7 +292,7 @@ body{
 
 <body>
 
-<!-- TOP BAR MOBILE -->
+<!-- TOP BAR -->
 <div class="topbar-mobile">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
     <div>Smart Attendance</div>
@@ -390,13 +387,11 @@ body{
 
 <script>
 
-/* SIDEBAR TOGGLE */
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
 }
 
-/* CHARTS */
 new Chart(document.getElementById("barChart"),{
 type:"line",
 data:{
