@@ -12,16 +12,13 @@ $role = $_SESSION['role'] ?? 'admin';
 /* DELETE STUDENT */
 if(isset($_GET['delete'])){
     $id = $_GET['delete'];
-
     mysqli_query($conn,"DELETE FROM students WHERE id='$id'");
-
     header("Location: manage_students.php");
     exit();
 }
 
 /* UPDATE STUDENT */
 if(isset($_POST['update_student'])){
-
     $id = $_POST['id'];
 
     mysqli_query($conn,"
@@ -56,11 +53,7 @@ $editData = null;
 
 if(isset($_GET['edit'])){
     $edit_id = $_GET['edit'];
-
-    $editQuery = mysqli_query($conn,"
-        SELECT * FROM students WHERE id='$edit_id'
-    ");
-
+    $editQuery = mysqli_query($conn,"SELECT * FROM students WHERE id='$edit_id'");
     $editData = mysqli_fetch_assoc($editQuery);
 }
 ?>
@@ -78,7 +71,13 @@ if(isset($_GET['edit'])){
 <style>
 
 /* GLOBAL */
-*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins;}
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins;
+}
+
 body{
     background:linear-gradient(135deg,#0f172a,#1e293b,#312e81);
     color:white;
@@ -96,6 +95,7 @@ body{
     top:0;
     z-index:5000;
 }
+
 .hamburger{
     font-size:26px;
     background:none;
@@ -115,6 +115,7 @@ body{
     padding:25px;
     z-index:1000;
 }
+
 .sidebar a{
     display:block;
     color:white;
@@ -123,6 +124,7 @@ body{
     border-radius:10px;
     margin-bottom:8px;
 }
+
 .sidebar a:hover{
     background:#2563eb;
 }
@@ -146,6 +148,7 @@ body{
     display:flex;
     gap:10px;
 }
+
 .search-box input{
     padding:12px;
     border-radius:10px;
@@ -153,6 +156,7 @@ body{
     background:rgba(255,255,255,0.08);
     color:white;
 }
+
 .search-box button{
     padding:12px 18px;
     border:none;
@@ -161,7 +165,7 @@ body{
     color:white;
 }
 
-/* TABLE */
+/* TABLE CARD */
 .table-card{
     background:#1e293b;
     padding:20px;
@@ -169,25 +173,36 @@ body{
     overflow-x:auto;
 }
 
+/* TABLE */
 table{
     width:100%;
     min-width:1100px;
     border-collapse:collapse;
 }
+
+/* 🔥 FIXED ROW SIZE (IMPORTANT CHANGE) */
 th,td{
-    padding:14px;
+    padding:10px 12px;   /* reduced from 14–20px */
+    font-size:14px;
+    line-height:1.2;
+    vertical-align:middle;
     border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+/* optional compact row height */
+table tr{
+    height:42px;
 }
 
 /* FINGERPRINT */
 .fp{
     background:#10b981;
-    padding:6px 12px;
+    padding:5px 10px;
     border-radius:20px;
     font-size:12px;
 }
 
-/* ACTION BUTTONS (IMPROVED) */
+/* ACTION BUTTONS */
 .action{
     display:flex;
     gap:8px;
@@ -195,46 +210,28 @@ th,td{
 }
 
 .btn{
-    padding:8px 12px;
+    padding:7px 10px;
     border-radius:8px;
     text-decoration:none;
-    font-size:13px;
+    font-size:12px;
     font-weight:600;
     transition:0.2s;
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-}
-
-.btn:hover{
-    transform:scale(1.05);
 }
 
 .edit{background:#f59e0b;color:white;}
 .delete{background:#ef4444;color:white;}
 .enroll{background:#2563eb;color:white;}
 
-/* MODAL */
-.modal{
-    position:fixed;
-    top:0;left:0;
-    width:100%;height:100%;
-    background:rgba(0,0,0,0.7);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-.modal-content{
-    background:#111827;
-    padding:30px;
-    border-radius:20px;
-    width:600px;
+.btn:hover{
+    transform:scale(1.05);
 }
 
-/* MOBILE FIX */
+/* MOBILE */
 @media(max-width:768px){
 
-.topbar-mobile{display:flex;}
+.topbar-mobile{
+    display:flex;
+}
 
 .main{
     margin-left:0;
@@ -250,15 +247,9 @@ th,td{
 table{
     min-width:900px;
 }
-
-/* buttons smaller on mobile */
-.btn{
-    font-size:12px;
-    padding:7px 10px;
-}
 }
 
-/* SIDEBAR MOBILE POP */
+/* SIDEBAR MOBILE */
 .overlay{
     display:none;
     position:fixed;
@@ -267,13 +258,14 @@ table{
     background:rgba(0,0,0,0.6);
     z-index:2000;
 }
+
 .overlay.active{display:block;}
 
 @media(max-width:768px){
 .sidebar{
     left:-280px;
+    position:fixed;
     transition:0.25s ease;
-    z-index:3000;
 }
 .sidebar.active{
     left:0;
@@ -285,7 +277,7 @@ table{
 
 <body>
 
-<!-- TOPBAR -->
+<!-- MOBILE TOPBAR -->
 <div class="topbar-mobile">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
     <div>Manage Students</div>
@@ -358,11 +350,11 @@ table{
 <td>
 <div class="action">
 
-<a class="btn enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">🔵 Enroll</a>
+<a class="btn enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
 
-<a class="btn edit" href="?edit=<?php echo $row['id']; ?>">✏ Edit</a>
+<a class="btn edit" href="?edit=<?php echo $row['id']; ?>">Edit</a>
 
-<a class="btn delete" onclick="return confirm('Delete?')" href="?delete=<?php echo $row['id']; ?>">🗑 Delete</a>
+<a class="btn delete" onclick="return confirm('Delete?')" href="?delete=<?php echo $row['id']; ?>">Delete</a>
 
 </div>
 </td>
@@ -374,6 +366,7 @@ table{
 </table>
 
 </div>
+
 </div>
 
 <script>
