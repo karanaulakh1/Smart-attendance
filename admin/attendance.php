@@ -19,7 +19,7 @@ if(isset($_POST['mark_attendance'])){
 
     $date = date("Y-m-d");
 
-    $time = date("h:i A");
+    $time = date("h:i:s");
 
     /* CHECK ALREADY MARKED */
 
