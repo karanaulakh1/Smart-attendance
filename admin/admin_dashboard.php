@@ -7,6 +7,9 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
+/* ROLE FROM SESSION */
+$admin_role = $_SESSION['role']; // IMPORTANT
+
 date_default_timezone_set("Asia/Kolkata");
 
 $today = date("Y-m-d");
@@ -14,7 +17,7 @@ $today = date("Y-m-d");
 /* TOTAL STUDENTS */
 $total_students = $conn->query("SELECT * FROM students")->num_rows;
 
-/* PRESENT */
+/* PRESENT TODAY */
 $present_today = $conn->query("
 SELECT * FROM attendance
 WHERE date='$today' AND status='Present'
@@ -23,7 +26,7 @@ WHERE date='$today' AND status='Present'
 /* ABSENT */
 $absent_today = $total_students - $present_today;
 
-/* PERCENTAGE */
+/* ATTENDANCE % */
 $attendance_percentage = ($total_students > 0)
     ? round(($present_today / $total_students) * 100)
     : 0;
@@ -80,7 +83,7 @@ body{
     overflow-x:hidden;
 }
 
-/* ================= TOP BAR ================= */
+/* ================= TOPBAR ================= */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
@@ -99,7 +102,7 @@ body{
     color:white;
 }
 
-/* ================= SIDEBAR (DESKTOP) ================= */
+/* ================= SIDEBAR ================= */
 .sidebar{
     width:260px;
     height:100vh;
@@ -136,7 +139,7 @@ body{
     padding:30px;
 }
 
-/* TOP BAR CONTENT */
+/* ================= TOP BAR ================= */
 .top-bar{
     display:flex;
     justify-content:space-between;
@@ -151,13 +154,24 @@ body{
 }
 
 .stat-card{
-    background:#1e293b;
-    padding:25px;
-    border-radius:20px;
+    padding:22px;
+    border-radius:18px;
 }
 
-.stat-card h2{
-    font-size:36px;
+.present-card{
+    background:linear-gradient(135deg,#16a34a,#22c55e);
+}
+
+.absent-card{
+    background:linear-gradient(135deg,#dc2626,#ef4444);
+}
+
+.total-card{
+    background:linear-gradient(135deg,#2563eb,#60a5fa);
+}
+
+.rate-card{
+    background:linear-gradient(135deg,#7c3aed,#a78bfa);
 }
 
 /* ================= CHARTS ================= */
@@ -192,25 +206,7 @@ body{
     border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
-/* STATUS */
-.present{
-    background:#10b981;
-    padding:5px 10px;
-    border-radius:20px;
-}
-
-.absent{
-    background:#ef4444;
-    padding:5px 10px;
-    border-radius:20px;
-}
-
-/* ================= OVERLAY ================= */
-.overlay{
-    display:none;
-}
-
-/* ================= MOBILE FIX ================= */
+/* ================= MOBILE ================= */
 @media(max-width:700px){
 
 .topbar-mobile{
@@ -222,7 +218,7 @@ body{
     padding:15px;
 }
 
-/* SMALLER CARDS */
+/* SMALL CARDS */
 .stats{
     grid-template-columns:repeat(2,1fr);
     gap:12px;
@@ -232,26 +228,12 @@ body{
     padding:15px;
 }
 
-.stat-card h2{
-    font-size:24px;
-}
-
-/* SINGLE COLUMN CHART */
+/* CHARTS */
 .charts{
     grid-template-columns:1fr;
 }
 
-/* TABLE SMALL */
-.table-box{
-    padding:15px;
-}
-
-.table th, .table td{
-    padding:8px;
-    font-size:13px;
-}
-
-/* OVERLAY */
+/* SIDEBAR SLIDE */
 .overlay{
     position:fixed;
     top:0;
@@ -259,27 +241,24 @@ body{
     width:100%;
     height:100%;
     background:rgba(0,0,0,0.6);
-    z-index:4000;
     display:none;
+    z-index:4000;
 }
 
 .overlay.active{
     display:block;
 }
 
-/* ================= LEFT SLIDE SIDEBAR (FIXED UX) ================= */
 .sidebar{
-    position:fixed;
     left:-280px;
+    position:fixed;
     top:0;
-    height:100vh;
     width:260px;
-    background:#1e293b;
+    height:100vh;
     transition:0.25s ease;
     z-index:5000;
 }
 
-/* ACTIVE */
 .sidebar.active{
     left:0;
 }
@@ -292,7 +271,7 @@ body{
 
 <body>
 
-<!-- TOP BAR -->
+<!-- TOPBAR -->
 <div class="topbar-mobile">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
     <div>Smart Attendance</div>
@@ -310,7 +289,11 @@ body{
 <a href="add_student.php">➕ Add Student</a>
 <a href="manage_students.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>
-<a href="admin_management.php">👮 Admin</a>
+
+<!-- ONLY SUPER ADMIN CAN SEE -->
+<?php if($admin_role == "superadmin"){ ?>
+<a href="admin_management.php">👮 Admin Management</a>
+<?php } ?>
 
 <a href="logout.php">🚪 Logout</a>
 
@@ -327,24 +310,24 @@ body{
 <!-- STATS -->
 <div class="stats">
 
-<div class="stat-card">
+<div class="stat-card present-card">
+<h2><?php echo $present_today; ?></h2>
+<p>Present Today</p>
+</div>
+
+<div class="stat-card absent-card">
+<h2><?php echo $absent_today; ?></h2>
+<p>Absent Today</p>
+</div>
+
+<div class="stat-card total-card">
 <h2><?php echo $total_students; ?></h2>
 <p>Total Students</p>
 </div>
 
-<div class="stat-card">
-<h2><?php echo $present_today; ?></h2>
-<p>Present</p>
-</div>
-
-<div class="stat-card">
-<h2><?php echo $absent_today; ?></h2>
-<p>Absent</p>
-</div>
-
-<div class="stat-card">
+<div class="stat-card rate-card">
 <h2><?php echo $attendance_percentage; ?>%</h2>
-<p>Rate</p>
+<p>Attendance Rate</p>
 </div>
 
 </div>
@@ -362,7 +345,7 @@ body{
 
 </div>
 
-<!-- TABLE -->
+<!-- RECENT -->
 <div class="table-box">
 
 <h3>Recent Attendance</h3>
@@ -375,6 +358,37 @@ body{
 <td><?php echo $row['name']; ?></td>
 <td><?php echo $row['status']; ?></td>
 <td><?php echo $row['date']; ?></td>
+</tr>
+
+<?php } ?>
+
+</table>
+
+</div>
+
+<!-- STUDENTS LIST -->
+<div class="table-box">
+
+<h3>Students</h3>
+
+<table class="table">
+
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>ID</th>
+</tr>
+
+<?php
+$students = $conn->query("SELECT * FROM students LIMIT 10");
+$i=1;
+while($s=$students->fetch_assoc()){
+?>
+
+<tr>
+<td><?php echo $i++; ?></td>
+<td><?php echo $s['name']; ?></td>
+<td><?php echo $s['student_id']; ?></td>
 </tr>
 
 <?php } ?>
