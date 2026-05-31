@@ -7,22 +7,18 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-
+$admin_role = $_SESSION['role']; // superadmin check
 
 /* MARK ATTENDANCE */
 
 if(isset($_POST['mark_attendance'])){
 
     $student_id = $_POST['student_id'];
-
     $status = $_POST['status'];
-
     $date = date("Y-m-d");
-
     $time = date("h:i:s");
 
     /* CHECK ALREADY MARKED */
-
     $check = $conn->query("
     SELECT * FROM attendance
     WHERE student_id='$student_id'
@@ -30,116 +26,40 @@ if(isset($_POST['mark_attendance'])){
     ");
 
     if($check->num_rows == 0){
-
         $conn->query("
-        INSERT INTO attendance
-        (
-        student_id,
-        status,
-        date,
-        time
-        )
-
-        VALUES
-        (
-        '$student_id',
-        '$status',
-        '$date',
-        '$time'
-        )
+        INSERT INTO attendance (student_id, status, date, time)
+        VALUES ('$student_id', '$status', '$date', '$time')
         ");
-
         $success = "Attendance Marked Successfully";
-
-    }else{
-
+    } else {
         $error = "Attendance Already Marked Today";
     }
 }
 
 /* FETCH STUDENTS */
-
-$students = $conn->query("
-SELECT * FROM students
-ORDER BY id DESC
-");
+$students = $conn->query("SELECT * FROM students ORDER BY id DESC");
 
 /* TODAY ATTENDANCE */
-
 $today = date("Y-m-d");
-
 $attendance = $conn->query("
 SELECT attendance.*, students.name
 FROM attendance
-LEFT JOIN students
-ON attendance.student_id = students.student_id
+LEFT JOIN students ON attendance.student_id = students.student_id
 WHERE attendance.date='$today'
 ORDER BY attendance.id DESC
 ");
-
 ?>
-
-
 <!DOCTYPE html>
 <html>
 <head>
 
 <title>Attendance</title>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* MOBILE TOPBAR */
-.topbar-mobile{
-    display:none;
-    justify-content:space-between;
-    align-items:center;
-    padding:15px 20px;
-    background:rgba(15,23,42,0.95);
-    position:sticky;
-    top:0;
-    z-index:1000;
-}
 
-.hamburger{
-    font-size:26px;
-    background:none;
-    border:none;
-    color:white;
-    cursor:pointer;
-}
-
-/* SIDEBAR ANIMATION */
-.sidebar{
-    transition:0.3s ease;
-}
-
-/* MOBILE */
-@media(max-width:700px){
-
-.topbar-mobile{
-    display:flex;
-}
-
-.sidebar{
-    position:fixed;
-    left:-260px;
-    top:0;
-    height:100%;
-    z-index:999;
-}
-
-.sidebar.active{
-    left:0;
-}
-
-.main{
-    margin-left:0;
-}
-}
+/* ================= GLOBAL ================= */
 *{
     margin:0;
     padding:0;
@@ -148,636 +68,534 @@ content="width=device-width, initial-scale=1.0">
 }
 
 body{
-
-    background:
-    linear-gradient(
-    135deg,
-    #0f172a,
-    #1e293b,
-    #312e81
-    );
-
-    min-height:100vh;
-
+    background:#0f172a;
     color:white;
-
     overflow-x:hidden;
+    min-height:100vh;
 }
 
-/* SIDEBAR */
+/* ================= MOBILE TOPBAR ================= */
+.topbar-mobile{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:#0f172a;
+    position:sticky;
+    top:0;
+    z-index:5000;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+}
 
-.sidebar{
+.hamburger{
+    font-size:26px;
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+    padding:4px 8px;
+}
 
-    width:260px;
+.mobile-brand{
+    font-size:16px;
+    font-weight:600;
+}
 
-    min-height:100vh;
-
+/* ================= OVERLAY ================= */
+.overlay{
+    display:none;
     position:fixed;
-
     top:0;
     left:0;
-
-    background:
-    linear-gradient(
-    180deg,
-    rgba(15,23,42,0.98),
-    rgba(30,41,59,0.96)
-    );
-
-    backdrop-filter:blur(20px);
-
-    border-right:
-    1px solid rgba(255,255,255,0.06);
-
-    padding:28px 18px;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.55);
+    z-index:5500;
 }
 
-/* LOGO */
+.overlay.active{
+    display:block;
+}
 
-.logo{
+/* ================= SIDEBAR ================= */
+.sidebar{
+    width:260px;
+    height:100vh;
+    position:fixed;
+    top:0;
+    left:0;
+    background:#1e293b;
+    padding:25px;
+    z-index:6000;
+    transition:0.25s ease;
+    overflow-y:auto;
+}
 
-    font-size:30px;
-
+.sidebar .logo{
+    font-size:28px;
     font-weight:700;
-
-    color:white;
-
+    margin-bottom:40px;
     line-height:1.3;
-
-    margin-bottom:50px;
-
-    padding-left:8px;
 }
-
-/* MENU */
 
 .sidebar a{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:14px;
-
+    display:block;
+    color:white;
     text-decoration:none;
-
-    color:#ffffff;
-
-    font-size:18px;
-
-    font-weight:500;
-
-    padding:16px 18px;
-
-    border-radius:16px;
-
+    padding:14px;
+    border-radius:10px;
     margin-bottom:8px;
-
-    transition:0.3s;
+    font-size:15px;
+    font-weight:500;
+    transition:0.2s;
 }
 
-.sidebar a:hover{
-
-    background:
-    linear-gradient(
-    135deg,
-    #2563eb,
-    #38bdf8
-    );
-
-    transform:translateX(4px);
+.sidebar a:hover,
+.sidebar a.active{
+    background:#2563eb;
 }
 
-/* ACTIVE */
-
-.active{
-
-    background:
-    linear-gradient(
-    135deg,
-    #2563eb,
-    #38bdf8
-    );
-
-    color:white !important;
-
-    box-shadow:
-    0 8px 25px rgba(37,99,235,0.35);
-}
-
-/* MAIN */
-
+/* ================= MAIN ================= */
 .main{
-
     margin-left:260px;
-
     padding:40px;
 }
 
-/* TOP */
-
+/* ================= TOP BAR ================= */
 .top-bar{
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     margin-bottom:35px;
+    flex-wrap:wrap;
+    gap:15px;
 }
 
 .page-title{
-
-    font-size:38px;
-
+    font-size:34px;
     font-weight:700;
 }
 
 .date-box{
-
-    background:
-    rgba(255,255,255,0.08);
-
-    border:
-    1px solid rgba(255,255,255,0.08);
-
-    padding:14px 22px;
-
-    border-radius:16px;
-
-    backdrop-filter:blur(18px);
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.08);
+    padding:12px 20px;
+    border-radius:14px;
+    font-size:14px;
+    white-space:nowrap;
 }
 
-/* CARD */
+/* ================= ALERTS ================= */
+.alert{
+    padding:14px 18px;
+    border-radius:14px;
+    margin-bottom:20px;
+    font-weight:500;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
 
+.alert-success{ background:#059669; }
+.alert-error{   background:#dc2626; }
+
+/* ================= CARD ================= */
 .card{
-
-    background:
-    linear-gradient(
-    145deg,
-    rgba(30,41,59,0.75),
-    rgba(15,23,42,0.95)
-    );
-
-    border:
-    1px solid rgba(255,255,255,0.05);
-
-    border-radius:30px;
-
-    padding:30px;
-
+    background:linear-gradient(145deg, rgba(30,41,59,0.85), rgba(15,23,42,0.95));
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:24px;
+    padding:28px;
     backdrop-filter:blur(18px);
-
-    box-shadow:
-    0 10px 40px rgba(0,0,0,0.35);
-
-    margin-bottom:30px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.3);
+    margin-bottom:28px;
 }
 
-/* FORM */
-
-.form-grid{
-
-    display:grid;
-
-    grid-template-columns:1fr 1fr 1fr auto;
-
-    gap:20px;
+.card-title{
+    font-size:22px;
+    font-weight:700;
+    margin-bottom:22px;
 }
 
-select{
+/* ================= EXPORT FORM ================= */
+.export-row{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    flex-wrap:wrap;
+    padding-bottom:22px;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    margin-bottom:22px;
+}
 
-    width:100%;
-
-    padding:16px;
-
+.export-row select{
+    flex:1;
+    min-width:180px;
+    padding:13px 16px;
     border:none;
-
-    border-radius:16px;
-
+    border-radius:12px;
     background:#0f172a;
-
     color:white;
-
-    font-size:15px;
-
+    font-size:14px;
+    font-family:'Poppins',sans-serif;
     outline:none;
-}
-
-button{
-
-    padding:16px 28px;
-
-    border:none;
-
-    border-radius:16px;
-
-    background:
-    linear-gradient(
-    135deg,
-    #2563eb,
-    #38bdf8
-    );
-
-    color:white;
-
-    font-size:15px;
-
-    font-weight:600;
-
     cursor:pointer;
-
-    transition:0.3s;
 }
 
-button:hover{
-
-    transform:translateY(-3px);
+.export-row button{
+    padding:13px 24px;
+    border:none;
+    border-radius:12px;
+    background:linear-gradient(135deg,#059669,#10b981);
+    color:white;
+    font-size:14px;
+    font-weight:600;
+    font-family:'Poppins',sans-serif;
+    cursor:pointer;
+    transition:0.2s;
+    white-space:nowrap;
 }
 
-/* ALERTS */
-
-.success{
-
-    background:#10b981;
-
-    padding:16px;
-
-    border-radius:16px;
-
-    margin-bottom:20px;
+.export-row button:hover{
+    transform:translateY(-2px);
 }
 
-.error{
-
-    background:#ef4444;
-
-    padding:16px;
-
-    border-radius:16px;
-
-    margin-bottom:20px;
+/* ================= MARK FORM ================= */
+.mark-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:16px;
+    align-items:end;
 }
 
-/* TABLE */
+.mark-grid select{
+    width:100%;
+    padding:14px 16px;
+    border:none;
+    border-radius:12px;
+    background:#0f172a;
+    color:white;
+    font-size:14px;
+    font-family:'Poppins',sans-serif;
+    outline:none;
+    cursor:pointer;
+}
 
+.mark-btn{
+    padding:14px 26px;
+    border:none;
+    border-radius:12px;
+    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    color:white;
+    font-size:14px;
+    font-weight:600;
+    font-family:'Poppins',sans-serif;
+    cursor:pointer;
+    transition:0.2s;
+    white-space:nowrap;
+}
+
+.mark-btn:hover{
+    transform:translateY(-2px);
+}
+
+/* ================= TABLE ================= */
 .table-box{
-
     overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
 }
 
 table{
-
     width:100%;
-
+    min-width:520px;
     border-collapse:collapse;
 }
 
 th{
-
     text-align:left;
-
-    padding:18px;
-
+    padding:14px 16px;
     color:#93c5fd;
-
-    font-size:15px;
+    font-size:13px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    white-space:nowrap;
 }
 
 td{
-
-    padding:18px;
-
-    border-top:
-    1px solid rgba(255,255,255,0.05);
+    padding:16px;
+    border-top:1px solid rgba(255,255,255,0.05);
+    font-size:14px;
 }
 
-/* STATUS */
+tbody tr:hover{
+    background:rgba(255,255,255,0.03);
+}
 
-.present{
-
-    background:#10b981;
-
-    padding:7px 16px;
-
+/* ================= STATUS BADGES ================= */
+.badge{
+    display:inline-block;
+    padding:5px 14px;
     border-radius:20px;
-
-    font-size:13px;
+    font-size:12px;
+    font-weight:600;
 }
 
-.absent{
+.badge-present{ background:#059669; }
+.badge-absent{  background:#dc2626; }
+.badge-late{    background:#d97706; }
 
-    background:#ef4444;
-
-    padding:7px 16px;
-
-    border-radius:20px;
-
-    font-size:13px;
+/* ================= EMPTY STATE ================= */
+.empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:#64748b;
 }
 
-.late{
-
-    background:#f59e0b;
-
-    padding:7px 16px;
-
-    border-radius:20px;
-
-    font-size:13px;
+.empty-state .icon{
+    font-size:48px;
+    margin-bottom:12px;
 }
 
-/* RESPONSIVE */
-
-@media(max-width:1000px){
-
-.form-grid{
-    grid-template-columns:1fr;
-}
-
-}
-
+/* ================= MOBILE ================= */
 @media(max-width:700px){
 
-.sidebar{
-    width:100%;
-    min-height:auto;
-    position:relative;
+    .topbar-mobile{
+        display:flex;
+    }
+
+    .sidebar{
+        left:-280px;
+    }
+
+    .sidebar.active{
+        left:0;
+    }
+
+    .main{
+        margin-left:0;
+        padding:16px;
+    }
+
+    .page-title{
+        font-size:24px;
+    }
+
+    .top-bar{
+        margin-bottom:20px;
+    }
+
+    .card{
+        padding:18px;
+        border-radius:18px;
+    }
+
+    /* Stack mark form on mobile */
+    .mark-grid{
+        grid-template-columns:1fr;
+    }
+
+    .mark-btn{
+        width:100%;
+    }
+
+    /* Stack export form on mobile */
+    .export-row{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .export-row select{
+        min-width:unset;
+        width:100%;
+    }
+
+    .export-row button{
+        width:100%;
+    }
+
+    /* Smaller table text on mobile */
+    td, th{
+        padding:12px 10px;
+        font-size:13px;
+    }
 }
 
-.main{
-    margin-left:0;
-}
-
-.top-bar{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:15px;
-}
-
+@media(max-width:400px){
+    .page-title{ font-size:20px; }
+    .card-title{ font-size:18px; }
 }
 
 </style>
-
 </head>
 
 <body>
 
-<!-- HAMBURGER BUTTON -->
+<!-- MOBILE TOPBAR -->
 <div class="topbar-mobile">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
-    <div class="mobile-title">Smart Attendance</div>
+    <div class="mobile-brand">📘 Smart Attendance</div>
 </div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
-<div class="logo">📘 Smart<br>Attendance</div>
+    <div class="logo">📘 Smart<br>Attendance</div>
 
-<a href="admin_dashboard.php">🏠 Dashboard</a>
-<a href="add_student.php">➕ Add Student</a>
-<a href="manage_students.php">👨‍🎓 Manage Students</a>
-<a href="attendance.php">🗓️ Attendance</a>
-<a href="admin_management.php">👮 Admin Management</a>
+    <a href="admin_dashboard.php">🏠 Dashboard</a>
+    <a href="add_student.php">➕ Add Student</a>
+    <a href="manage_students.php">👨‍🎓 Manage Students</a>
+    <a href="attendance.php" class="active">🗓️ Attendance</a>
 
-<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
+    <?php if($admin_role == "superadmin"){ ?>
+    <a href="admin_management.php">👮 Admin Management</a>
+    <?php } ?>
+
+    <a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
 
 </div>
 
 <!-- MAIN -->
-
 <div class="main">
 
-<!-- TOP -->
-
-<div class="top-bar">
-
-<div class="page-title">
-Attendance Management
-</div>
-
-<div class="date-box">
-📅 <?php echo date("d M Y"); ?>
-</div>
-
-</div>
-
-<!-- ALERT -->
-
-<?php if(isset($success)){ ?>
-
-<div class="success">
-✅ <?php echo $success; ?>
-</div>
-
-<?php } ?>
-
-<?php if(isset($error)){ ?>
-
-<div class="error">
-❌ <?php echo $error; ?>
-</div>
-
-<?php } ?>
-
-<!-- FORM -->
-
-<div class="card">
-    <form method="GET" action="export_excel.php">
-
-<select name="course" required>
-
-<option value="">Select Course</option>
-
-<option value="IOT">IOT</option>
-
-<option value="AI">AI</option>
-
-</select>
-
-<button type="submit">
-Export Excel
-</button>
-
-</form>
-
-<br><br>
-
-<form method="POST">
-
-<div class="form-grid">
-
-<select name="student_id" required>
-
-<option value="">
-Select Student
-</option>
-
-<?php while($row = $students->fetch_assoc()){ ?>
-
-<option value="<?php echo $row['student_id']; ?>">
-
-<?php echo $row['name']; ?>
-(<?php echo $row['student_id']; ?>)
-
-</option>
-
-<?php } ?>
-
-</select>
-
-<select name="status" required>
-
-<option value="">
-Select Status
-</option>
-
-<option value="Present">
-Present
-</option>
-
-<option value="Absent">
-Absent
-</option>
-
-<option value="Late">
-Late
-</option>
-
-</select>
-
-<button type="submit"
-name="mark_attendance">
-
-Mark Attendance
-
-</button>
-
-</div>
-
-</form>
-
-</div>
-
-<!-- TABLE -->
-
-<div class="card">
-
-<div class="page-title"
-style="font-size:28px; margin-bottom:25px;">
-
-Today's Attendance
-
-</div>
-
-<div class="table-box">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>#</th>
-<th>Student</th>
-<th>Status</th>
-<th>Date</th>
-<th>Time</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<?php
-
-$count = 1;
-
-while($att = $attendance->fetch_assoc()){
-
-?>
-
-<tr>
-
-<td>
-<?php echo $count++; ?>
-</td>
-
-<td>
-<?php echo $att['name']; ?>
-</td>
-
-<td>
-
-<?php if($att['status']=="Present"){ ?>
-
-<span class="present">
-Present
-</span>
-
-<?php }elseif($att['status']=="Late"){ ?>
-
-<span class="late">
-Late
-</span>
-
-<?php }else{ ?>
-
-<span class="absent">
-Absent
-</span>
-
-<?php } ?>
-
-</td>
-
-<td>
-<?php echo $att['date']; ?>
-</td>
-
-<td>
-<?php echo $att['time']; ?>
-</td>
-
-</tr>
-
-<?php } ?>
-
-</tbody>
-
-</table>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="page-title">Attendance</div>
+        <div class="date-box">📅 <?php echo date("d M Y"); ?></div>
+    </div>
+
+    <!-- ALERTS -->
+    <?php if(isset($success)){ ?>
+    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+    <?php } ?>
+
+    <?php if(isset($error)){ ?>
+    <div class="alert alert-error">❌ <?php echo $error; ?></div>
+    <?php } ?>
+
+    <!-- ACTIONS CARD -->
+    <div class="card">
+
+        <!-- EXPORT ROW -->
+        <div class="card-title">Export Attendance</div>
+        <form method="GET" action="export_excel.php">
+            <div class="export-row">
+                <select name="course" required>
+                    <option value="">Select Course</option>
+                    <option value="IOT">IOT</option>
+                    <option value="AI">AI</option>
+                </select>
+                <button type="submit">📥 Export Excel</button>
+            </div>
+        </form>
+
+        <!-- MARK ATTENDANCE ROW -->
+        <div class="card-title">Mark Attendance</div>
+        <form method="POST">
+            <div class="mark-grid">
+
+                <select name="student_id" required>
+                    <option value="">Select Student</option>
+                    <?php while($row = $students->fetch_assoc()){ ?>
+                    <option value="<?php echo $row['student_id']; ?>">
+                        <?php echo $row['name']; ?> (<?php echo $row['student_id']; ?>)
+                    </option>
+                    <?php } ?>
+                </select>
+
+                <select name="status" required>
+                    <option value="">Select Status</option>
+                    <option value="Present">✅ Present</option>
+                    <option value="Absent">❌ Absent</option>
+                    <option value="Late">⏰ Late</option>
+                </select>
+
+                <button type="submit" name="mark_attendance" class="mark-btn">
+                    Mark
+                </button>
+
+            </div>
+        </form>
+
+    </div>
+
+    <!-- TODAY'S TABLE CARD -->
+    <div class="card">
+
+        <div class="card-title">📋 Today's Attendance</div>
+
+        <div class="table-box">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                <?php
+                $count = 1;
+                $hasRows = false;
+                while($att = $attendance->fetch_assoc()){
+                    $hasRows = true;
+                ?>
+                <tr>
+                    <td><?php echo $count++; ?></td>
+                    <td><?php echo htmlspecialchars($att['name']); ?></td>
+                    <td>
+                        <?php
+                        $s = $att['status'];
+                        if($s == "Present"){
+                            echo '<span class="badge badge-present">Present</span>';
+                        } elseif($s == "Late"){
+                            echo '<span class="badge badge-late">Late</span>';
+                        } else {
+                            echo '<span class="badge badge-absent">Absent</span>';
+                        }
+                        ?>
+                    </td>
+                    <td><?php echo $att['date']; ?></td>
+                    <td><?php echo $att['time']; ?></td>
+                </tr>
+                <?php } ?>
+
+                <?php if(!$hasRows){ ?>
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <div>No attendance marked today yet.</div>
+                        </div>
+                    </td>
+                </tr>
+                <?php } ?>
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
 
 </div>
 
-</div>
-
-</div>
-<script>
-
-function confirmLogout(){
-
-    let confirmAction = confirm(
-    "Are you sure you want to logout?"
-    );
-
-    if(confirmAction){
-
-        window.location = "logout.php";
-
-    }
-
-}
-
-</script>
 <script>
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
+
+function confirmLogout(){
+    if(confirm("Are you sure you want to logout?")){
+        window.location = "logout.php";
+    }
 }
 </script>
 
-</body>
-</html>
 </body>
 </html>
