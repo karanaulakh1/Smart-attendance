@@ -368,9 +368,9 @@ while($row=$recent->fetch_assoc()){
 <tbody>
 
 <?php
-$admins = $conn->query("SELECT * FROM admins");
+$admin = $conn->query("SELECT * FROM admin");
 $i=1;
-while($a=$admins->fetch_assoc()){
+while($a=$admin->fetch_assoc()){
 ?>
 
 <tr>
