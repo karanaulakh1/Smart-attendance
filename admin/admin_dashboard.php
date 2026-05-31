@@ -228,6 +228,45 @@ body{
 /* MOBILE */
 @media(max-width:700px){
 
+
+/* ================= MOBILE TABLE FIX ================= */
+
+/* force table to stay inside box */
+.table-box{
+    overflow-x:auto;
+}
+
+/* keep table contained */
+.table{
+    width:100%;
+    min-width:600px;   /* prevents squishing */
+    border-collapse:collapse;
+}
+
+/* prevent badge overflow */
+.status-present,
+.status-absent,
+.time-badge{
+    white-space:nowrap;
+}
+
+/* ensure cells never break layout */
+.table td{
+    white-space:nowrap;
+}
+
+/* smooth scroll (better UX) */
+.table-box::-webkit-scrollbar{
+    height:6px;
+}
+
+.table-box::-webkit-scrollbar-thumb{
+    background:#334155;
+    border-radius:10px;
+}
+
+/* =================================================== */
+
 .topbar-mobile{
     display:flex;
 }
