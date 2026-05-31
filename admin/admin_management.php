@@ -41,6 +41,7 @@ $admins = $conn->query("SELECT * FROM admin");
 <!DOCTYPE html>
 <html>
 <head>
+
 <title>Admin Management</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -49,12 +50,13 @@ $admins = $conn->query("SELECT * FROM admin");
 
 <style>
 
-/* BASE */
+/* GLOBAL */
 body{
     margin:0;
     font-family:Poppins;
     background:linear-gradient(135deg,#0f172a,#1e293b);
     color:white;
+    overflow-x:hidden;
 }
 
 /* TOP MOBILE BAR */
@@ -66,7 +68,7 @@ body{
     background:rgba(15,23,42,0.95);
     position:sticky;
     top:0;
-    z-index:1000;
+    z-index:2000;
 }
 
 .hamburger{
@@ -86,7 +88,8 @@ body{
     left:0;
     background:rgba(15,23,42,0.95);
     padding:25px;
-    transition:0.3s;
+    transition:0.3s ease;
+    z-index:1500;
 }
 
 .sidebar .logo{
@@ -108,7 +111,7 @@ body{
     background:#2563eb;
 }
 
-/* MAIN */
+/* MAIN CONTENT */
 .container{
     margin-left:260px;
     padding:30px;
@@ -163,25 +166,29 @@ th{
     text-decoration:none;
 }
 
-/* MOBILE */
+/* MOBILE FIX */
 @media(max-width:700px){
 
 .topbar-mobile{
     display:flex;
 }
 
-.sidebar{
-    left:-260px;
-}
-
-.sidebar.active{
-    left:0;
-}
-
 .container{
     margin-left:0;
     padding:15px;
 }
+
+/* sidebar hidden */
+.sidebar{
+    left:-260px;
+}
+
+/* sidebar open */
+.sidebar.active{
+    left:0;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+}
+
 }
 
 </style>
@@ -276,9 +283,25 @@ Delete
 
 <!-- JS -->
 <script>
+
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
 }
+
+/* close sidebar when clicking outside */
+document.addEventListener("click", function(e){
+
+    let sidebar = document.getElementById("sidebar");
+    let button = document.querySelector(".hamburger");
+
+    if(window.innerWidth <= 700){
+        if(!sidebar.contains(e.target) && !button.contains(e.target)){
+            sidebar.classList.remove("active");
+        }
+    }
+
+});
+
 </script>
 
 </body>
