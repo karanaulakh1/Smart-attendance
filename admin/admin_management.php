@@ -7,6 +7,8 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
+$admin_role = $_SESSION['role'];
+
 /* ADD ADMIN */
 if(isset($_POST['add_admin'])){
 
@@ -16,16 +18,16 @@ if(isset($_POST['add_admin'])){
     $role = $_POST['role'];
 
     $conn->query("
-        INSERT INTO admin (username, email, password, role)
-        VALUES ('$username', '$email', '$password', '$role')
+        INSERT INTO admin (username,email,password,role)
+        VALUES ('$username','$email','$password','$role')
     ");
 
     header("Location: admin_management.php");
     exit();
 }
 
-/* DELETE ADMIN */
-if(isset($_GET['delete'])){
+/* DELETE ADMIN (ONLY SUPERADMIN SAFE CHECK) */
+if(isset($_GET['delete']) && $admin_role=="superadmin"){
     $id = $_GET['delete'];
     $conn->query("DELETE FROM admin WHERE id=$id");
 
@@ -49,15 +51,19 @@ $admins = $conn->query("SELECT * FROM admin");
 <style>
 
 /* ================= GLOBAL ================= */
-body{
+*{
+    box-sizing:border-box;
     margin:0;
+    padding:0;
     font-family:Poppins;
-    background:#0f172a;
-    color:white;
-    overflow-x:hidden;
 }
 
-/* ================= TOP BAR ================= */
+body{
+    background:#0f172a;
+    color:white;
+}
+
+/* ================= TOPBAR ================= */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
@@ -66,7 +72,7 @@ body{
     background:#0f172a;
     position:sticky;
     top:0;
-    z-index:4000;
+    z-index:5000;
 }
 
 /* ================= SIDEBAR ================= */
@@ -79,10 +85,11 @@ body{
     background:#1e293b;
     padding:25px;
     z-index:1000;
+    transition:0.25s ease;
 }
 
 .sidebar .logo{
-    font-size:26px;
+    font-size:28px;
     font-weight:700;
     margin-bottom:40px;
 }
@@ -100,53 +107,56 @@ body{
     background:#2563eb;
 }
 
-/* ================= MAIN LAYOUT ================= */
+/* ================= MAIN ================= */
 .container{
     margin-left:260px;
-    width:calc(100% - 260px);
     padding:30px;
-    position:relative;
-    z-index:1;
 }
 
-/* ================= FORM ================= */
+/* ================= FORM (SAME AS ADD STUDENT STYLE) ================= */
 .form-box{
-    background:rgba(30,41,59,0.8);
+    background:#1e293b;
     padding:25px;
-    border-radius:20px;
-    margin-bottom:30px;
+    border-radius:25px;
+    margin-bottom:25px;
+    max-width:900px;
 }
 
-input, select{
+input,select{
     width:100%;
-    padding:12px;
+    padding:14px;
     margin:8px 0;
-    border-radius:10px;
     border:none;
+    border-radius:12px;
+    background:#0f172a;
+    color:white;
 }
 
-/* BUTTON */
 button{
-    padding:12px 18px;
-    background:#2563eb;
+    width:100%;
+    padding:14px;
     border:none;
+    border-radius:12px;
+    background:#2563eb;
     color:white;
-    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
     cursor:pointer;
 }
 
-/* TABLE */
+/* ================= TABLE ================= */
 table{
     width:100%;
     border-collapse:collapse;
-    background:rgba(30,41,59,0.8);
+    background:#1e293b;
     border-radius:20px;
     overflow:hidden;
 }
 
-th, td{
-    padding:15px;
-    border-bottom:1px solid rgba(255,255,255,0.1);
+th,td{
+    padding:14px;
+    text-align:center;
+    border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
 th{
@@ -165,11 +175,35 @@ th{
     display:flex;
 }
 
-/* FULL WIDTH MAIN */
+/* MAIN FULL WIDTH */
 .container{
     margin-left:0;
-    width:100%;
     padding:15px;
+}
+
+/* SIDEBAR SLIDE (LIKE ADD STUDENT) */
+.sidebar{
+    position:fixed;
+    left:-280px;
+    top:0;
+    height:100vh;
+    width:260px;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+/* SMALLER FORM CARD */
+.form-box{
+    padding:18px;
+}
+
+/* TABLE SMALL FIX */
+table{
+    font-size:13px;
+}
+
 }
 
 /* OVERLAY */
@@ -180,39 +214,12 @@ th{
     width:100%;
     height:100%;
     background:rgba(0,0,0,0.6);
-    z-index:2500;
     display:none;
+    z-index:4000;
 }
 
 .overlay.active{
     display:block;
-}
-
-/* CLEAN POPUP (NO SCALE BUG, NO COLOR LINE) */
-.sidebar{
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:90%;
-    max-width:320px;
-
-    background:#1e293b;
-    border-radius:18px;
-
-    opacity:0;
-    visibility:hidden;
-
-    transition:0.2s ease;
-    z-index:3000;
-}
-
-/* ACTIVE */
-.sidebar.active{
-    opacity:1;
-    visibility:visible;
-}
-
 }
 
 </style>
@@ -221,7 +228,7 @@ th{
 
 <body>
 
-<!-- MOBILE TOP BAR -->
+<!-- TOP BAR -->
 <div class="topbar-mobile">
     <button onclick="toggleSidebar()" style="font-size:26px;background:none;border:none;color:white;">☰</button>
     <div>Admin Management</div>
@@ -239,9 +246,12 @@ th{
 <a href="add_student.php">➕ Add Student</a>
 <a href="manage_students.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>
-<a href="admin_management.php">👮 Admin Management</a>
 
-<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
+<?php if($admin_role=="superadmin"){ ?>
+<a href="admin_management.php">👮 Admin Management</a>
+<?php } ?>
+
+<a href="logout.php">🚪 Logout</a>
 
 </div>
 
@@ -250,7 +260,7 @@ th{
 
 <h2>👮 Admin Management</h2>
 
-<!-- ADD ADMIN -->
+<!-- FORM -->
 <div class="form-box">
 
 <h3>Add New Admin</h3>
@@ -258,9 +268,7 @@ th{
 <form method="POST">
 
 <input type="text" name="username" placeholder="Username" required>
-
 <input type="email" name="email" placeholder="Email" required>
-
 <input type="text" name="password" placeholder="Password" required>
 
 <select name="role">
@@ -281,7 +289,6 @@ th{
 <th>ID</th>
 <th>Username</th>
 <th>Email</th>
-<th>Password</th>
 <th>Role</th>
 <th>Action</th>
 </tr>
@@ -292,14 +299,17 @@ th{
 <td><?php echo $row['id']; ?></td>
 <td><?php echo $row['username']; ?></td>
 <td><?php echo $row['email']; ?></td>
-<td><?php echo $row['password']; ?></td>
 <td><?php echo $row['role']; ?></td>
+
 <td>
+<?php if($admin_role=="superadmin"){ ?>
 <a class="delete" href="?delete=<?php echo $row['id']; ?>"
-onclick="return confirm('Delete admin?')">
-Delete
-</a>
+onclick="return confirm('Delete admin?')">Delete</a>
+<?php } else { ?>
+<span style="color:#94a3b8;">No Access</span>
+<?php } ?>
 </td>
+
 </tr>
 
 <?php } ?>
@@ -308,7 +318,6 @@ Delete
 
 </div>
 
-<!-- JS -->
 <script>
 
 function toggleSidebar(){
