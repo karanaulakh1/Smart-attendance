@@ -66,7 +66,7 @@ body{
     background:#0f172a;
     position:sticky;
     top:0;
-    z-index:5000;
+    z-index:3000;
 }
 
 .hamburger{
@@ -77,16 +77,16 @@ body{
     cursor:pointer;
 }
 
-/* ================= SIDEBAR (DESKTOP) ================= */
+/* ================= SIDEBAR (DESKTOP FIXED) ================= */
 .sidebar{
     width:260px;
     height:100vh;
     position:fixed;
     top:0;
     left:0;
-    background:#111827; /* SOLID COLOR */
+    background:#1e293b; /* BRIGHT FIX */
     padding:25px;
-    z-index:2000;
+    z-index:1000;
 }
 
 .sidebar .logo{
@@ -108,10 +108,12 @@ body{
     background:#2563eb;
 }
 
-/* ================= MAIN ================= */
+/* ================= MAIN CONTENT ================= */
 .container{
     margin-left:260px;
     padding:30px;
+    position:relative;
+    z-index:1;
 }
 
 /* ================= OVERLAY ================= */
@@ -135,6 +137,7 @@ input, select{
     border:none;
 }
 
+/* BUTTON */
 button{
     padding:12px 18px;
     background:#2563eb;
@@ -144,7 +147,7 @@ button{
     cursor:pointer;
 }
 
-/* ================= TABLE ================= */
+/* TABLE */
 table{
     width:100%;
     border-collapse:collapse;
@@ -167,6 +170,12 @@ th{
     text-decoration:none;
 }
 
+/* ================= DESKTOP FIX ================= */
+h2, .topbar-mobile{
+    position:relative;
+    z-index:2;
+}
+
 /* ================= MOBILE ================= */
 @media(max-width:700px){
 
@@ -174,39 +183,42 @@ th{
     display:flex;
 }
 
+/* container reset */
 .container{
     margin-left:0;
     padding:15px;
 }
 
-/* overlay active */
+/* overlay */
 .overlay{
     position:fixed;
     top:0;
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.6);
-    z-index:4000;
+    background:rgba(0,0,0,0.5);
+    z-index:2500;
 }
 
 .overlay.active{
     display:block;
 }
 
-/* POP OUT ANIMATION (NOT SLIDE) */
+/* POP OUT SIDEBAR (BRIGHT FIX) */
 .sidebar{
     left:50%;
     top:50%;
-    transform:translate(-50%,-50%) scale(0.6);
+    transform:translate(-50%,-50%) scale(0.85);
     opacity:0;
-    width:85%;
+    width:90%;
     height:auto;
-    border-radius:20px;
+    border-radius:18px;
+    background:#1e293b; /* BRIGHT */
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
     transition:0.25s ease;
+    z-index:3000;
 }
 
-/* active state */
 .sidebar.active{
     transform:translate(-50%,-50%) scale(1);
     opacity:1;
@@ -315,7 +327,6 @@ function toggleSidebar(){
     document.getElementById("overlay").classList.toggle("active");
 }
 
-/* close on outside click */
 document.addEventListener("click", function(e){
 
     let sidebar = document.getElementById("sidebar");
@@ -330,7 +341,6 @@ document.addEventListener("click", function(e){
 
 });
 
-/* reset on resize */
 window.addEventListener("resize", function(){
     if(window.innerWidth > 700){
         document.getElementById("sidebar").classList.remove("active");
