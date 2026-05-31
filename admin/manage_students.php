@@ -7,10 +7,7 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-/* SUPER ADMIN ROLE */
-$admin_role = $_SESSION['role'] ?? 'admin';
-
-/* DELETE STUDENT */
+/* DELETE */
 if(isset($_GET['delete'])){
     $id = $_GET['delete'];
     mysqli_query($conn,"DELETE FROM students WHERE id='$id'");
@@ -18,13 +15,12 @@ if(isset($_GET['delete'])){
     exit();
 }
 
-/* UPDATE STUDENT */
+/* UPDATE */
 if(isset($_POST['update_student'])){
 
     $id = $_POST['id'];
 
-    mysqli_query($conn,"
-        UPDATE students SET
+    mysqli_query($conn,"UPDATE students SET
         student_id='{$_POST['student_id']}',
         name='{$_POST['name']}',
         email='{$_POST['email']}',
@@ -54,8 +50,9 @@ ORDER BY id DESC
 /* EDIT */
 $editData = null;
 if(isset($_GET['edit'])){
-    $edit_id = $_GET['edit'];
-    $editData = mysqli_fetch_assoc(mysqli_query($conn,"SELECT * FROM students WHERE id='$edit_id'"));
+    $id = $_GET['edit'];
+    $res = mysqli_query($conn,"SELECT * FROM students WHERE id='$id'");
+    $editData = mysqli_fetch_assoc($res);
 }
 ?>
 
@@ -63,86 +60,95 @@ if(isset($_GET['edit'])){
 <html>
 <head>
 <title>Manage Students</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 
-/* GLOBAL */
-*{box-sizing:border-box;}
+/* ===== GLOBAL ===== */
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins;}
 body{
-    margin:0;
-    font-family:Poppins;
-    background:#0f172a;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#312e81);
     color:white;
     overflow-x:hidden;
 }
 
-/* TOPBAR MOBILE */
+/* ===== TOPBAR MOBILE ===== */
 .topbar-mobile{
     display:none;
     justify-content:space-between;
-    align-items:center;
-    padding:15px 18px;
-    background:#0f172a;
+    padding:15px 20px;
+    background:rgba(15,23,42,0.95);
     position:sticky;
     top:0;
-    z-index:3000;
-}
-.hamburger{
-    font-size:26px;
-    background:none;
-    border:none;
-    color:white;
+    z-index:2000;
 }
 
-/* SIDEBAR */
+/* ===== SIDEBAR ===== */
 .sidebar{
     width:260px;
     height:100vh;
     position:fixed;
-    top:0;
     left:0;
-    background:#1e293b;
+    top:0;
     padding:25px;
-    z-index:2000;
-    transition:0.25s ease;
+    background:linear-gradient(180deg,#0f172a,#1e293b);
+    border-right:1px solid rgba(255,255,255,0.08);
+}
+
+.logo{
+    font-size:28px;
+    font-weight:700;
+    margin-bottom:40px;
 }
 
 .sidebar a{
     display:block;
-    padding:12px;
-    color:white;
-    text-decoration:none;
-    border-radius:10px;
+    padding:14px;
     margin-bottom:8px;
+    border-radius:12px;
+    text-decoration:none;
+    color:white;
 }
-.sidebar a:hover{background:#2563eb;}
 
-/* MAIN */
+.sidebar a:hover{
+    background:#2563eb;
+}
+
+/* ===== MAIN ===== */
 .main{
     margin-left:260px;
-    padding:25px;
+    padding:30px;
 }
 
-/* TOP */
 .topbar{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:20px;
+    margin-bottom:25px;
 }
 
-/* SEARCH */
+.title{
+    font-size:30px;
+    font-weight:700;
+}
+
+/* ===== SEARCH ===== */
+.search-box{
+    display:flex;
+    gap:10px;
+}
+
 .search-box input{
     padding:12px;
     border-radius:10px;
     border:none;
-    background:#1e293b;
+    width:260px;
+    background:rgba(255,255,255,0.08);
     color:white;
 }
+
 .search-box button{
     padding:12px 18px;
     border:none;
@@ -151,64 +157,48 @@ body{
     color:white;
 }
 
-/* TABLE */
+/* ===== TABLE ===== */
 .table-card{
-    background:#1e293b;
+    background:rgba(30,41,59,0.8);
     padding:20px;
-    border-radius:18px;
+    border-radius:20px;
     overflow-x:auto;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
+    min-width:900px;
 }
 
 th,td{
-    padding:10px;
-    font-size:14px;
-    border-bottom:1px solid rgba(255,255,255,0.08);
+    padding:12px;
+    text-align:left;
 }
 
-/* FINGERPRINT */
-.fp{
-    background:#10b981;
-    padding:5px 10px;
-    border-radius:20px;
-    font-size:12px;
-}
-
-/* ACTION BUTTONS */
-.actions{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-}
-
-/* row buttons */
-.btn-row{
+/* ===== BUTTON ROW FIX ===== */
+.action-box{
     display:flex;
     gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
 }
 
 .btn{
-    padding:8px 10px;
-    font-size:12px;
+    padding:8px 12px;
+    border:none;
     border-radius:8px;
+    font-size:12px;
+    cursor:pointer;
     text-decoration:none;
     color:white;
-    text-align:center;
-    flex:1;
 }
 
 .enroll{background:#2563eb;}
 .delete{background:#ef4444;}
-.edit{
-    background:#f59e0b;
-    width:100%;
-}
+.edit{background:#f59e0b; padding:8px 14px;}
 
-/* MODAL */
+/* ===== MODAL ===== */
 .modal{
     position:fixed;
     inset:0;
@@ -221,61 +211,53 @@ th,td{
 .modal-content{
     background:#111827;
     padding:25px;
-    border-radius:15px;
-    width:90%;
-    max-width:600px;
+    border-radius:20px;
+    width:600px;
 }
 
-.form-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-}
-
-.input-box input{
-    width:100%;
-    padding:10px;
-    background:#1e293b;
-    border:none;
-    border-radius:8px;
-    color:white;
-}
-
-.save-btn{
-    width:100%;
-    margin-top:15px;
-    padding:12px;
-    background:#2563eb;
-    border:none;
-    color:white;
-    border-radius:10px;
-}
-
-/* MOBILE FIX LIKE DASHBOARD */
+/* ===== MOBILE ===== */
 @media(max-width:768px){
 
 .topbar-mobile{display:flex;}
 
-.main{margin-left:0;}
-
 .sidebar{
-    left:-280px;
     position:fixed;
+    left:-280px;
+    transition:0.3s;
+    z-index:3000;
 }
 
 .sidebar.active{
     left:0;
 }
 
-/* buttons fix */
-.btn-row{
-    flex-direction:row;
+.main{
+    margin-left:0;
+    padding:15px;
 }
 
-.actions{
+.topbar{
+    flex-direction:column;
     align-items:stretch;
+    gap:10px;
 }
+
+/* SEARCH MOBILE FIX */
+.search-box{
+    flex-direction:column;
 }
+
+.search-box input{
+    width:100%;
+}
+
+.action-box{
+    flex-direction:row;
+    flex-wrap:wrap;
+}
+
+}
+
 </style>
 </head>
 
@@ -283,38 +265,32 @@ th,td{
 
 <!-- MOBILE TOPBAR -->
 <div class="topbar-mobile">
-    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <button onclick="toggleSidebar()" style="font-size:24px;background:none;border:none;color:white;">☰</button>
     <div>Manage Students</div>
 </div>
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
+    <div class="logo">📘 Smart<br>Attendance</div>
 
-<div style="font-size:22px;font-weight:700;margin-bottom:20px;">
-📘 Smart Attendance
-</div>
-
-<a href="admin_dashboard.php">Dashboard</a>
-<a href="add_student.php">Add Student</a>
-<a href="manage_students.php">Manage Students</a>
-
-<?php if($admin_role == "superadmin"){ ?>
-<a href="admin_management.php">Admin Management</a>
-<?php } ?>
-
-<a href="logout.php">Logout</a>
+    <a href="admin_dashboard.php">Dashboard</a>
+    <a href="add_student.php">Add Student</a>
+    <a href="manage_students.php">Manage Students</a>
+    <a href="attendance.php">Attendance</a>
+    <a href="admin_management.php">Admin</a>
+    <a href="logout.php">Logout</a>
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
 <div class="topbar">
-<h2>Manage Students</h2>
+    <div class="title">Manage Students</div>
 
-<form class="search-box">
-<input name="search" value="<?php echo $search; ?>" placeholder="Search...">
-<button>Search</button>
-</form>
+    <form class="search-box">
+        <input name="search" value="<?= $search ?>" placeholder="Search">
+        <button>Search</button>
+    </form>
 </div>
 
 <div class="table-card">
@@ -323,7 +299,6 @@ th,td{
 <tr>
 <th>ID</th>
 <th>Name</th>
-<th>Email</th>
 <th>Dept</th>
 <th>Fingerprint</th>
 <th>Actions</th>
@@ -332,29 +307,23 @@ th,td{
 <?php while($row=mysqli_fetch_assoc($students)){ ?>
 
 <tr>
-<td><?php echo $row['student_id']; ?></td>
-<td><?php echo $row['name']; ?></td>
-<td><?php echo $row['email']; ?></td>
-<td><?php echo $row['department']; ?></td>
-
-<td><span class="fp"><?php echo $row['fingerprint_id']; ?></span></td>
+<td><?= $row['id'] ?></td>
+<td><?= $row['name'] ?></td>
+<td><?= $row['department'] ?></td>
+<td><?= $row['fingerprint_id'] ?></td>
 
 <td>
+<div class="action-box">
 
-<div class="actions">
+<a class="btn enroll" href="save_enroll.php?student_id=<?= $row['student_id'] ?>">
+Enroll
+</a>
 
-<div class="btn-row">
+<a class="btn delete" href="?delete=<?= $row['id'] ?>">Delete</a>
 
-<a class="btn enroll" href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">Enroll</a>
-
-<a class="btn delete" href="?delete=<?php echo $row['id']; ?>" onclick="return confirm('Delete?')">Delete</a>
-
-</div>
-
-<a class="btn edit" href="?edit=<?php echo $row['id']; ?>">Edit</a>
+<a class="btn edit" href="?edit=<?= $row['id'] ?>">Edit</a>
 
 </div>
-
 </td>
 
 </tr>
@@ -366,32 +335,19 @@ th,td{
 
 </div>
 
-<!-- EDIT MODAL -->
 <?php if($editData){ ?>
 <div class="modal">
 <div class="modal-content">
-
 <h3>Edit Student</h3>
 
 <form method="POST">
+<input type="hidden" name="id" value="<?= $editData['id'] ?>">
 
-<input type="hidden" name="id" value="<?php echo $editData['id']; ?>">
+<input name="name" value="<?= $editData['name'] ?>">
+<input name="department" value="<?= $editData['department'] ?>">
+<input name="fingerprint_id" value="<?= $editData['fingerprint_id'] ?>">
 
-<div class="form-grid">
-
-<input name="student_id" value="<?php echo $editData['student_id']; ?>">
-<input name="name" value="<?php echo $editData['name']; ?>">
-<input name="email" value="<?php echo $editData['email']; ?>">
-<input name="phone" value="<?php echo $editData['phone']; ?>">
-<input name="department" value="<?php echo $editData['department']; ?>">
-<input name="course" value="<?php echo $editData['course']; ?>">
-<input name="year" value="<?php echo $editData['year']; ?>">
-<input name="fingerprint_id" value="<?php echo $editData['fingerprint_id']; ?>">
-
-</div>
-
-<button class="save-btn" name="update_student">Update</button>
-
+<button type="submit" name="update_student">Update</button>
 </form>
 
 </div>
