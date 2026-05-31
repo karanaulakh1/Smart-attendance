@@ -7,11 +7,12 @@ if(!isset($_SESSION['admin'])){
     exit();
 }
 
-/* ROLE (SUPER ADMIN CHECK) */
-$admin_role = $_SESSION['role'] ?? "admin";
+/* ROLE */
+$admin_role = $_SESSION['role'] ?? '';
 
 /* DELETE STUDENT */
 if(isset($_GET['delete'])){
+
     $id = $_GET['delete'];
 
     mysqli_query($conn,"DELETE FROM students WHERE id='$id'");
@@ -34,16 +35,16 @@ if(isset($_POST['update_student'])){
     $fingerprint_id = $_POST['fingerprint_id'];
 
     mysqli_query($conn,"
-    UPDATE students SET
-    student_id='$student_id',
-    name='$name',
-    email='$email',
-    phone='$phone',
-    department='$department',
-    course='$course',
-    year='$year',
-    fingerprint_id='$fingerprint_id'
-    WHERE id='$id'
+        UPDATE students SET
+        student_id='$student_id',
+        name='$name',
+        email='$email',
+        phone='$phone',
+        department='$department',
+        course='$course',
+        year='$year',
+        fingerprint_id='$fingerprint_id'
+        WHERE id='$id'
     ");
 
     header("Location: manage_students.php");
@@ -52,6 +53,7 @@ if(isset($_POST['update_student'])){
 
 /* SEARCH */
 $search = "";
+
 if(isset($_GET['search'])){
     $search = $_GET['search'];
 }
@@ -64,13 +66,16 @@ OR department LIKE '%$search%'
 ORDER BY id DESC
 ");
 
-/* EDIT */
+/* EDIT DATA */
 $editData = null;
 
 if(isset($_GET['edit'])){
     $edit_id = $_GET['edit'];
 
-    $editQuery = mysqli_query($conn,"SELECT * FROM students WHERE id='$edit_id'");
+    $editQuery = mysqli_query($conn,"
+        SELECT * FROM students WHERE id='$edit_id'
+    ");
+
     $editData = mysqli_fetch_assoc($editQuery);
 }
 ?>
@@ -86,56 +91,15 @@ if(isset($_GET['edit'])){
 
 <style>
 
-/* GLOBAL */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins',sans-serif;
-}
+/* ===== SAME DASHBOARD SIDEBAR STYLE ===== */
 
 body{
+    margin:0;
+    font-family:Poppins;
     background:#0f172a;
     color:white;
-    overflow-x:hidden;
 }
 
-/* TOPBAR MOBILE */
-.topbar-mobile{
-    display:none;
-    justify-content:space-between;
-    align-items:center;
-    padding:15px 20px;
-    background:#0f172a;
-    position:sticky;
-    top:0;
-    z-index:5000;
-}
-
-.hamburger{
-    font-size:26px;
-    background:none;
-    border:none;
-    color:white;
-}
-
-/* OVERLAY (IMPORTANT SAME AS DASHBOARD) */
-.overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
-    display:none;
-    z-index:4000;
-}
-
-.overlay.active{
-    display:block;
-}
-
-/* SIDEBAR (SAME AS DASHBOARD) */
 .sidebar{
     width:260px;
     height:100vh;
@@ -144,8 +108,7 @@ body{
     left:0;
     background:#1e293b;
     padding:25px;
-    z-index:5000;
-    transition:0.25s ease;
+    transition:0.3s;
 }
 
 .sidebar .logo{
@@ -167,160 +130,71 @@ body{
     background:#2563eb;
 }
 
+/* SUPER ADMIN FIX */
+.admin-badge{
+    margin-bottom:15px;
+    padding:8px 12px;
+    background:#334155;
+    border-radius:8px;
+    font-size:13px;
+}
+
 /* MAIN */
 .main{
     margin-left:260px;
     padding:30px;
 }
 
-/* TOP BAR */
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:25px;
-}
-
-/* SEARCH */
-.search-box{
+/* ACTION BUTTON ROW (STRICT A STYLE) */
+.action{
     display:flex;
     gap:10px;
-}
-
-.search-box input{
-    width:280px;
-    padding:12px;
-    border-radius:10px;
-    border:none;
-    outline:none;
-}
-
-.search-box button{
-    padding:12px 18px;
-    border:none;
-    background:#2563eb;
-    color:white;
-    border-radius:10px;
-}
-
-/* TABLE */
-.table-card{
-    background:#1e293b;
-    padding:20px;
-    border-radius:15px;
-    overflow-x:auto;
-}
-
-table{
-    width:100%;
-    min-width:1000px;
-    border-collapse:collapse;
-}
-
-th,td{
-    padding:12px;
-    border-bottom:1px solid rgba(255,255,255,0.1);
-    white-space:nowrap;
-}
-
-/* FP BADGE */
-.fp{
-    background:#10b981;
-    padding:5px 10px;
-    border-radius:20px;
-    font-size:12px;
-}
-
-/* BUTTON LAYOUT FIX */
-.action-box{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
     align-items:center;
 }
 
-/* BUTTONS */
 .btn{
-    padding:7px 10px;
-    font-size:12px;
-    border-radius:8px;
+    padding:10px 14px;
+    border-radius:10px;
     text-decoration:none;
     color:white;
-    display:inline-block;
-}
-
-.edit{ background:#f59e0b; }
-.delete{ background:#ef4444; }
-.enroll{ background:#2563eb; }
-
-/* MODAL */
-.modal{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.75);
-    display:flex;
+    font-size:14px;
+    font-weight:600;
+    display:inline-flex;
     justify-content:center;
     align-items:center;
-    z-index:6000;
+    min-width:90px;
 }
 
-.modal-content{
-    background:#111827;
-    padding:30px;
-    border-radius:20px;
-    width:700px;
-    max-width:95%;
-}
-
-.form-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:15px;
-}
-
-.input-box input{
-    width:100%;
-    padding:12px;
-    border-radius:10px;
+.edit{background:#f59e0b;}
+.delete{background:#ef4444;}
+.enroll-btn{
+    background:#2563eb;
     border:none;
+    min-width:120px;
+    cursor:pointer;
 }
 
-/* MOBILE FIX */
+/* MOBILE (same as dashboard) */
 @media(max-width:700px){
-
-.topbar-mobile{
-    display:flex;
-}
-
-.main{
-    margin-left:0;
-    padding:15px;
-}
 
 .sidebar{
     left:-260px;
+    position:fixed;
 }
 
 .sidebar.active{
     left:0;
 }
 
-.form-grid{
-    grid-template-columns:1fr;
+.main{
+    margin-left:0;
 }
 
-.search-box input{
-    width:100%;
 }
 
-/* BUTTONS STACK FIX MOBILE */
-.action-box{
-    flex-direction:column;
-    align-items:flex-start;
-}
-
+/* TABLE SAFE */
+td{
+    vertical-align:middle;
 }
 
 </style>
@@ -328,19 +202,14 @@ th,td{
 
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar-mobile">
-    <button class="hamburger" onclick="toggleSidebar()">☰</button>
-    <div>Manage Students</div>
-</div>
-
-<!-- OVERLAY -->
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-<!-- SIDEBAR -->
+<!-- SIDEBAR (DASHBOARD STYLE + SUPERADMIN) -->
 <div class="sidebar" id="sidebar">
 
 <div class="logo">📘 Smart<br>Attendance</div>
+
+<?php if($admin_role=="superadmin"){ ?>
+<div class="admin-badge">👑 Super Admin</div>
+<?php } ?>
 
 <a href="admin_dashboard.php">🏠 Dashboard</a>
 <a href="add_student.php">➕ Add Student</a>
@@ -351,7 +220,7 @@ th,td{
 <a href="admin_management.php">👮 Admin Management</a>
 <?php } ?>
 
-<a href="logout.php">🚪 Logout</a>
+<a href="javascript:void(0);" onclick="confirmLogout()">🚪 Logout</a>
 
 </div>
 
@@ -360,18 +229,20 @@ th,td{
 
 <div class="topbar">
 
-<h2>Manage Students</h2>
+<div class="title">Manage Students</div>
 
 <form class="search-box">
-<input type="text" name="search" value="<?php echo $search; ?>" placeholder="Search">
-<button>Search</button>
+<input type="text" name="search" value="<?php echo $search; ?>" placeholder="Search students...">
+<button type="submit">Search</button>
 </form>
 
 </div>
 
+<!-- TABLE -->
 <div class="table-card">
 
 <table>
+<thead>
 <tr>
 <th>ID</th>
 <th>Student ID</th>
@@ -384,10 +255,14 @@ th,td{
 <th>Fingerprint</th>
 <th>Actions</th>
 </tr>
+</thead>
 
-<?php while($row=mysqli_fetch_assoc($students)){ ?>
+<tbody>
+
+<?php while($row = mysqli_fetch_assoc($students)){ ?>
 
 <tr>
+
 <td><?php echo $row['id']; ?></td>
 <td><?php echo $row['student_id']; ?></td>
 <td><?php echo $row['name']; ?></td>
@@ -401,44 +276,80 @@ th,td{
 
 <td>
 
-<div class="action-box">
+<div class="action">
 
-<a class="btn enroll"
-href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">
-Enroll
+<a href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>">
+<button class="enroll-btn">Enroll</button>
 </a>
 
-<a class="btn edit"
-href="manage_students.php?edit=<?php echo $row['id']; ?>">
+<a class="btn edit" href="manage_students.php?edit=<?php echo $row['id']; ?>">
 Edit
 </a>
 
 <a class="btn delete"
 href="manage_students.php?delete=<?php echo $row['id']; ?>"
-onclick="return confirm('Delete?')">
+onclick="return confirm('Delete Student?')">
 Delete
 </a>
 
 </div>
 
 </td>
+
 </tr>
 
 <?php } ?>
 
+</tbody>
 </table>
 
 </div>
-
 </div>
 
+<!-- EDIT MODAL (UNCHANGED LOGIC) -->
+<?php if($editData){ ?>
+
+<div class="modal">
+<div class="modal-content">
+
+<div class="modal-title">Edit Student</div>
+
+<form method="POST">
+
+<input type="hidden" name="id" value="<?php echo $editData['id']; ?>">
+
+<div class="form-grid">
+<input type="text" name="student_id" value="<?php echo $editData['student_id']; ?>">
+<input type="text" name="name" value="<?php echo $editData['name']; ?>">
+<input type="email" name="email" value="<?php echo $editData['email']; ?>">
+<input type="text" name="phone" value="<?php echo $editData['phone']; ?>">
+<input type="text" name="department" value="<?php echo $editData['department']; ?>">
+<input type="text" name="course" value="<?php echo $editData['course']; ?>">
+<input type="text" name="year" value="<?php echo $editData['year']; ?>">
+<input type="text" name="fingerprint_id" value="<?php echo $editData['fingerprint_id']; ?>">
+</div>
+
+<button type="submit" name="update_student" class="save-btn">
+Update Student
+</button>
+
+</form>
+
+</div>
+</div>
+
+<?php } ?>
+
 <script>
+function confirmLogout(){
+    if(confirm("Are you sure you want to logout?")){
+        window.location="logout.php";
+    }
+}
 
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("active");
-    document.getElementById("overlay").classList.toggle("active");
 }
-
 </script>
 
 </body>
