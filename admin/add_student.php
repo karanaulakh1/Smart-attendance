@@ -367,6 +367,8 @@ body{
 🗓️ Attendance
 </a>
 
+<a href="admin_management.php">👮 Admin Management</a>
+
 <a href="javascript:void(0);"
 class="logout-btn"
 onclick="confirmLogout()">

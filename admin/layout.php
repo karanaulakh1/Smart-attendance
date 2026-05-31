@@ -98,6 +98,7 @@ if(!isset($_SESSION['admin'])){
     <a href="add_student.php"><i class="fa fa-user-plus"></i> Add Student</a>
     <a href="manage_students.php"><i class="fa fa-users"></i> Manage Students</a>
     <a href="attendance.php"><i class="fa fa-calendar-check"></i> Attendance</a>
+    <a href="admin_management.php">👮 Admin Management</a>
     <a href="logout.php"><i class="fa fa-sign-out-alt"></i> Logout</a>
 </div>
 
