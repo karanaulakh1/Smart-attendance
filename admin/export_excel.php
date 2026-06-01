@@ -1,44 +1,55 @@
 <?php
 
-include("../database.php");
+session_start();
+include '../database.php';
 
-header("Content-Type: application/vnd.ms-excel");
-
-header("Content-Disposition: attachment; filename=attendance_report.xls");
-
-$course = $_GET['course'];
-
-echo "Attendance Report - ".$course."\n\n";
-
-echo "Student ID\tName\tCourse\tPresent Days\n";
-
-$query = mysqli_query($conn,
-
-"SELECT students.student_id,
-students.name,
-students.course,
-COUNT(attendance.id) AS total_present
-
-FROM students
-
-LEFT JOIN attendance
-ON students.student_id = attendance.student_id
-
-WHERE students.course='$course'
-
-GROUP BY students.student_id
-
-");
-
-while($row = mysqli_fetch_assoc($query)){
-
-    echo $row['student_id']."\t";
-
-    echo $row['name']."\t";
-
-    echo $row['course']."\t";
-
-    echo $row['total_present']."\n";
+if(!isset($_SESSION['admin'])){
+    header("Location: admin_login.php");
+    exit();
 }
+
+$date = date("Y-m-d");
+
+header('Content-Type: text/csv; charset=utf-8');
+header('Content-Disposition: attachment; filename=attendance_'.$date.'.csv');
+
+$output = fopen('php://output', 'w');
+
+fputcsv($output, array(
+    'ID',
+    'Student ID',
+    'Student Name',
+    'Date',
+    'Time',
+    'Status',
+    'Course'
+));
+
+$sql = "
+SELECT attendance.*,
+       students.name
+FROM attendance
+LEFT JOIN students
+ON attendance.student_id = students.student_id
+ORDER BY attendance.id DESC
+";
+
+$result = $conn->query($sql);
+
+while($row = $result->fetch_assoc()){
+
+    fputcsv($output, array(
+        $row['id'],
+        $row['student_id'],
+        $row['name'],
+        $row['date'],
+        $row['time'],
+        $row['status'],
+        $row['course']
+    ));
+}
+
+fclose($output);
+exit();
 
 ?>
