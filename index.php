@@ -297,19 +297,7 @@ h1 .hl{
 .marquee-track{
     display:flex;
     width:max-content;
-    will-change:transform;
-    backface-visibility:hidden;
-    -webkit-backface-visibility:hidden;
-    transform:translateZ(0);
-    -webkit-transform:translateZ(0);
-    animation:marquee 35s linear infinite;
 }
-.marquee-section:hover .marquee-track{ animation-play-state:paused; }
-@keyframes marquee{
-    0%  { transform:translate3d(0,0,0); }
-    100%{ transform:translate3d(-50%,0,0); }
-}
-
 .m-item{
     display:flex; align-items:center; gap:10px;
     padding:0 28px;
@@ -476,22 +464,10 @@ footer a:hover{ color:var(--text); }
 
 <!-- MARQUEE -->
 <div class="marquee-section">
-    <div class="marquee-track">
+    <div class="marquee-track" id="marqueeTrack">
         <?php
         $items = [
             ["IoT Integration",       "blue"],
-            ["Fingerprint Auth",       "cyan"],
-            ["Real-Time Dashboard",    "green"],
-            ["Auto Absent Marking",    "blue"],
-            ["ESP32 Hardware",         "cyan"],
-            ["Biometric Verification", "green"],
-            ["Attendance Analytics",   "blue"],
-            ["Excel Export",           "cyan"],
-            ["Role-Based Access",      "green"],
-            ["Mobile Responsive",      "blue"],
-            ["Smart Attendance",       "cyan"],
-            ["Final Year Project",     "green"],
-            ["IoT Integration",        "blue"],
             ["Fingerprint Auth",       "cyan"],
             ["Real-Time Dashboard",    "green"],
             ["Auto Absent Marking",    "blue"],
@@ -511,13 +487,55 @@ footer a:hover{ color:var(--text); }
     </div>
 </div>
 
+<script>
+(function(){
+    var track = document.getElementById('marqueeTrack');
+    if(!track) return;
+
+    // Clone items for seamless loop
+    var origItems = track.innerHTML;
+    track.innerHTML = origItems + origItems + origItems;
+
+    var pos = 0;
+    var speed = 0.5;
+    var raf;
+    var paused = false;
+    var singleWidth = 0;
+
+    function getWidth(){
+        var items = track.querySelectorAll('.m-item');
+        var total = 0;
+        var count = items.length / 3;
+        for(var i = 0; i < count; i++){
+            total += items[i].offsetWidth;
+        }
+        return total;
+    }
+
+    function step(){
+        if(!paused){
+            pos += speed;
+            if(!singleWidth) singleWidth = getWidth();
+            if(pos >= singleWidth) pos = 0;
+            track.style.transform = 'translateX(-' + pos + 'px)';
+        }
+        raf = requestAnimationFrame(step);
+    }
+
+    // Slower on mobile for readability
+    if(window.innerWidth < 640) speed = 0.4;
+
+    track.parentElement.addEventListener('mouseenter', function(){ paused = true; });
+    track.parentElement.addEventListener('mouseleave', function(){ paused = false; });
+
+    raf = requestAnimationFrame(step);
+})();
+</script>
+
 <!-- FOOTER -->
 <footer>
     <span>Smart Attendance Monitoring System &copy; 2026 &mdash; Final Year Engineering Project</span>
-    <div style="display:flex;gap:20px;">
-        <a href="aboutus.php">About Us</a>
-        <a href="admin/admin_login.php">Admin Login</a>
-    </div>
+    <a href="aboutus.php">About Us</a>
 </footer>
 
 </body>
