@@ -156,9 +156,7 @@ h1 .hl{
     transition:.2s;
 }
 .stack-tag:hover{ color:var(--text); border-color:rgba(255,255,255,.15); }
-.stack-tag .sdot{
-    width:6px; height:6px; border-radius:50%;
-}
+.stack-tag .sdot{ width:6px; height:6px; border-radius:50%; }
 .dot-blue{ background:var(--accent); }
 .dot-cyan{ background:var(--accent2); }
 .dot-green{ background:var(--green); }
@@ -173,6 +171,7 @@ h1 .hl{
     overflow:hidden;
     max-width:480px;
     background:var(--surface);
+    margin-bottom:24px;
 }
 .stat-item{
     flex:1; padding:18px 16px; text-align:center;
@@ -193,12 +192,71 @@ h1 .hl{
     color:var(--muted); text-transform:uppercase; letter-spacing:.7px;
 }
 
+/* ── ESP32 STATUS WIDGET ── */
+.esp-widget{
+    display:inline-flex; align-items:center; gap:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 18px;
+    max-width:480px;
+    width:100%;
+    transition:.3s;
+}
+.esp-widget.online{
+    border-color:rgba(34,197,94,.3);
+    background:rgba(34,197,94,.06);
+}
+.esp-widget.offline{
+    border-color:rgba(244,63,94,.25);
+    background:rgba(244,63,94,.05);
+}
+.esp-led{
+    width:10px; height:10px;
+    border-radius:50%;
+    flex-shrink:0;
+    background:var(--muted);
+    transition:.3s;
+}
+.esp-widget.online  .esp-led{
+    background:#4ade80;
+    box-shadow:0 0 0 3px rgba(74,222,128,.2);
+    animation:ledPulse 1.5s infinite;
+}
+.esp-widget.offline .esp-led{
+    background:#f43f5e;
+    box-shadow:none;
+    animation:none;
+}
+@keyframes ledPulse{
+    0%,100%{ box-shadow:0 0 0 3px rgba(74,222,128,.2); }
+    50%{ box-shadow:0 0 0 6px rgba(74,222,128,0); }
+}
+.esp-info{ flex:1; min-width:0; }
+.esp-label{
+    font-size:12px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.6px;
+    color:var(--muted);
+}
+.esp-status-text{
+    font-size:13px; font-weight:600;
+    margin-top:1px;
+    color:var(--muted);
+    transition:.3s;
+}
+.esp-widget.online  .esp-status-text{ color:#4ade80; }
+.esp-widget.offline .esp-status-text{ color:#f87171; }
+.esp-time{
+    font-family:'DM Mono',monospace;
+    font-size:11px; color:var(--muted);
+    white-space:nowrap;
+}
+
 /* RIGHT */
 .hero-right{
     flex:0 0 400px;
     display:flex; align-items:center; justify-content:center;
 }
-
 .portal{
     width:100%;
     background:rgba(255,255,255,.04);
@@ -237,7 +295,6 @@ h1 .hl{
     display:flex; align-items:center; justify-content:center; gap:10px;
 }
 .portal-btn:hover{ transform:translateY(-2px); }
-
 .btn-admin{
     background:linear-gradient(135deg,var(--accent),#5b8af9);
     color:#fff;
@@ -294,10 +351,7 @@ h1 .hl{
     overflow:hidden;
     padding:16px 0;
 }
-.marquee-track{
-    display:flex;
-    width:max-content;
-}
+.marquee-track{ display:flex; width:max-content; }
 .m-item{
     display:flex; align-items:center; gap:10px;
     padding:0 28px;
@@ -308,9 +362,7 @@ h1 .hl{
     flex-shrink:0;
 }
 .m-item:last-child{ border-right:none; }
-.m-dot{
-    width:5px; height:5px; border-radius:50%; flex-shrink:0;
-}
+.m-dot{ width:5px; height:5px; border-radius:50%; flex-shrink:0; }
 .m-dot-blue{ background:var(--accent); }
 .m-dot-cyan{ background:var(--accent2); }
 .m-dot-green{ background:var(--green); }
@@ -343,10 +395,9 @@ footer a:hover{ color:var(--text); }
     .blob-1{ width:300px;height:300px; }
     .blob-2{ width:250px;height:250px; }
     .stat-row{ max-width:100%; }
+    .esp-widget{ max-width:100%; }
 }
-@media(max-width:380px){
-    h1{ font-size:28px; }
-}
+@media(max-width:380px){ h1{ font-size:28px; } }
 </style>
 </head>
 <body>
@@ -417,6 +468,16 @@ footer a:hover{ color:var(--text); }
             </div>
         </div>
 
+        <!-- ESP32 STATUS -->
+        <div class="esp-widget" id="espWidget">
+            <div class="esp-led" id="espLed"></div>
+            <div class="esp-info">
+                <div class="esp-label">ESP32 Device</div>
+                <div class="esp-status-text" id="espStatusText">Checking...</div>
+            </div>
+            <div class="esp-time" id="espTime">—</div>
+        </div>
+
     </div>
 
     <!-- PORTAL -->
@@ -425,7 +486,7 @@ footer a:hover{ color:var(--text); }
 
             <div class="portal-head">
                 <h2>System Portal</h2>
-                <p>Admin panel or student attendance view</p>
+                <p>Admin panel or attendance view</p>
             </div>
 
             <a href="admin/admin_login.php" class="portal-btn btn-admin">
@@ -487,31 +548,26 @@ footer a:hover{ color:var(--text); }
     </div>
 </div>
 
+<!-- FOOTER -->
+<footer>
+    <span>Smart Attendance Monitoring System &copy; 2026 &mdash; Final Year Engineering Project</span>
+    <a href="aboutus.php">About Us</a>
+</footer>
+
 <script>
+/* ── MARQUEE ── */
 (function(){
     var track = document.getElementById('marqueeTrack');
     if(!track) return;
-
-    // Clone items for seamless loop
-    var origItems = track.innerHTML;
-    track.innerHTML = origItems + origItems + origItems;
-
-    var pos = 0;
-    var speed = 0.5;
-    var raf;
-    var paused = false;
-    var singleWidth = 0;
-
+    var orig = track.innerHTML;
+    track.innerHTML = orig + orig + orig;
+    var pos = 0, speed = 0.5, paused = false, singleWidth = 0;
     function getWidth(){
         var items = track.querySelectorAll('.m-item');
-        var total = 0;
-        var count = items.length / 3;
-        for(var i = 0; i < count; i++){
-            total += items[i].offsetWidth;
-        }
+        var total = 0, count = items.length / 3;
+        for(var i = 0; i < count; i++) total += items[i].offsetWidth;
         return total;
     }
-
     function step(){
         if(!paused){
             pos += speed;
@@ -519,24 +575,45 @@ footer a:hover{ color:var(--text); }
             if(pos >= singleWidth) pos = 0;
             track.style.transform = 'translateX(-' + pos + 'px)';
         }
-        raf = requestAnimationFrame(step);
+        requestAnimationFrame(step);
     }
-
-    // Slower on mobile for readability
     if(window.innerWidth < 640) speed = 0.4;
-
     track.parentElement.addEventListener('mouseenter', function(){ paused = true; });
     track.parentElement.addEventListener('mouseleave', function(){ paused = false; });
+    requestAnimationFrame(step);
+})();
 
-    raf = requestAnimationFrame(step);
+/* ── ESP32 LIVE STATUS (polls every second) ── */
+(function(){
+    var widget     = document.getElementById('espWidget');
+    var statusText = document.getElementById('espStatusText');
+    var timeEl     = document.getElementById('espTime');
+
+    function poll(){
+        fetch('esp_status.php?action=status')
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if(d.online){
+                    widget.className     = 'esp-widget online';
+                    statusText.textContent = 'Online';
+                    timeEl.textContent   = 'Last seen: ' + d.time_ago;
+                } else {
+                    widget.className     = 'esp-widget offline';
+                    statusText.textContent = d.last_ping ? 'Offline' : 'Never Connected';
+                    timeEl.textContent   = d.last_ping ? 'Last: ' + d.time_ago : '—';
+                }
+            })
+            .catch(function(){
+                widget.className     = 'esp-widget offline';
+                statusText.textContent = 'Cannot reach server';
+                timeEl.textContent   = '—';
+            });
+    }
+
+    poll();                          // run immediately
+    setInterval(poll, 1000);         // then every second
 })();
 </script>
-
-<!-- FOOTER -->
-<footer>
-    <span>Smart Attendance Monitoring System &copy; 2026 &mdash; Final Year Engineering Project</span>
-    <a href="aboutus.php">About Us</a>
-</footer>
 
 </body>
 </html>
