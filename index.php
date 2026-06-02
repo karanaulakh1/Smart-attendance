@@ -107,9 +107,9 @@ nav{
 
 .eyebrow{
     display:inline-flex; align-items:center; gap:8px;
-    background:rgba(59,110,248,.1);
-    border:1px solid rgba(59,110,248,.22);
-    color:#93c5fd;
+    background:rgba(34,197,94,.1);
+    border:1px solid rgba(34,197,94,.2);
+    color:#4ade80;
     padding:7px 16px; border-radius:50px;
     font-size:12px; font-weight:700;
     letter-spacing:.6px; text-transform:uppercase;
@@ -117,10 +117,10 @@ nav{
 }
 .eyebrow .live-dot{
     width:7px; height:7px; border-radius:50%;
-    background:#93c5fd;
+    background:#4ade80;
     animation:livePulse 1.5s infinite;
 }
-@keyframes livePulse{ 0%,100%{opacity:1} 50%{opacity:.25} }
+@keyframes livePulse{ 0%,100%{opacity:1} 50%{opacity:.3} }
 
 h1{
     font-size:62px; font-weight:700;
@@ -156,7 +156,7 @@ h1 .hl{
     transition:.2s;
 }
 .stack-tag:hover{ color:var(--text); border-color:rgba(255,255,255,.15); }
-.stack-tag .dot{
+.stack-tag .sdot{
     width:6px; height:6px; border-radius:50%;
 }
 .dot-blue{ background:var(--accent); }
@@ -175,12 +175,12 @@ h1 .hl{
     background:var(--surface);
 }
 .stat-item{
-    flex:1; padding:18px 20px; text-align:center;
+    flex:1; padding:18px 16px; text-align:center;
     border-right:1px solid var(--border);
 }
 .stat-item:last-child{ border-right:none; }
 .stat-num{
-    font-size:26px; font-weight:700;
+    font-size:24px; font-weight:700;
     letter-spacing:-1px; line-height:1;
     margin-bottom:4px;
     background:linear-gradient(135deg,var(--accent),var(--accent2));
@@ -189,7 +189,7 @@ h1 .hl{
     background-clip:text;
 }
 .stat-lbl{
-    font-size:11px; font-weight:600;
+    font-size:10px; font-weight:600;
     color:var(--muted); text-transform:uppercase; letter-spacing:.7px;
 }
 
@@ -214,12 +214,10 @@ h1 .hl{
     top:0; left:0; right:0; height:3px;
     background:linear-gradient(90deg,var(--accent),var(--accent2),var(--green));
 }
-
 .portal-head{ text-align:center; margin-bottom:28px; }
 .portal-head h2{ font-size:22px; font-weight:700; letter-spacing:-.4px; margin-bottom:6px; }
 .portal-head p{ font-size:13px; color:var(--muted); }
 
-/* divider */
 .or-divider{
     display:flex; align-items:center; gap:12px;
     margin:20px 0;
@@ -229,7 +227,6 @@ h1 .hl{
     content:''; flex:1; height:1px; background:var(--border);
 }
 
-/* portal buttons */
 .portal-btn{
     width:100%; height:52px;
     border:none; border-radius:13px;
@@ -269,23 +266,57 @@ h1 .hl{
 }
 .btn-student:hover{ box-shadow:0 8px 24px rgba(34,197,94,.4); }
 
-/* portal info row */
-.portal-info{
-    display:grid; grid-template-columns:1fr 1fr;
-    gap:10px; margin-top:20px;
-    padding-top:20px;
+.portal-stats{
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:10px; margin-top:22px;
+    padding-top:22px;
     border-top:1px solid var(--border);
 }
-.pinfo{
-    display:flex; align-items:flex-start; gap:10px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:12px;
+.pstat{ text-align:center; }
+.pstat-val{
+    font-size:22px; font-weight:700; letter-spacing:-1px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
 }
-.pinfo-icon{ font-size:18px; flex-shrink:0; margin-top:1px; }
-.pinfo-text{ font-size:11px; color:var(--muted); line-height:1.5; font-weight:500; }
-.pinfo-text strong{ display:block; color:var(--text); font-size:12px; margin-bottom:2px; }
+.pstat-label{
+    font-size:10px; font-weight:600;
+    color:var(--muted); text-transform:uppercase; letter-spacing:.6px;
+}
+
+/* ── MARQUEE ── */
+.marquee-section{
+    position:relative; z-index:1;
+    border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02);
+    overflow:hidden;
+    padding:16px 0;
+}
+.marquee-track{
+    display:flex; gap:0;
+    width:max-content;
+    animation:marquee 28s linear infinite;
+}
+.marquee-track:hover{ animation-play-state:paused; }
+@keyframes marquee{ to{ transform:translateX(-50%); } }
+
+.m-item{
+    display:flex; align-items:center; gap:10px;
+    padding:0 32px;
+    font-family:'DM Mono',monospace;
+    font-size:12px; font-weight:500;
+    color:var(--muted); white-space:nowrap;
+    border-right:1px solid var(--border);
+}
+.m-item:last-child{ border-right:none; }
+.m-dot{
+    width:5px; height:5px; border-radius:50%; flex-shrink:0;
+}
+.m-dot-blue{ background:var(--accent); }
+.m-dot-cyan{ background:var(--accent2); }
+.m-dot-green{ background:var(--green); }
 
 /* ── FOOTER ── */
 footer{
@@ -318,7 +349,6 @@ footer a:hover{ color:var(--text); }
 }
 @media(max-width:380px){
     h1{ font-size:28px; }
-    .portal-info{ grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -350,24 +380,24 @@ footer a:hover{ color:var(--text); }
 
         <div class="eyebrow">
             <span class="live-dot"></span>
-            Final Year Engineering Project · 2026
+            IoT-Powered Attendance
         </div>
 
-        <h1>Attendance,<br><span class="hl">Automated</span><br>with Biometrics</h1>
+        <h1>Smart <span class="hl">Attendance</span><br>Monitoring<br>System</h1>
 
         <p class="hero-desc">
-            No more roll calls. No proxy attendance. Students tap their fingerprint on an
-            ESP32-powered device and the system handles everything — marking, tracking,
-            reporting, and auto-absent at end of day.
+            No more roll calls. No proxy attendance. Students tap their fingerprint
+            on an ESP32-powered device and Smart Attendance handles everything —
+            marking, tracking, reporting, and auto-absent at end of day.
         </p>
 
         <!-- TECH STACK -->
         <div class="stack-row">
-            <span class="stack-tag"><span class="dot dot-blue"></span>ESP32</span>
-            <span class="stack-tag"><span class="dot dot-cyan"></span>Fingerprint Sensor</span>
-            <span class="stack-tag"><span class="dot dot-green"></span>PHP</span>
-            <span class="stack-tag"><span class="dot dot-orange"></span>TiDB</span>
-            <span class="stack-tag"><span class="dot dot-purple"></span>Render</span>
+            <span class="stack-tag"><span class="sdot dot-blue"></span>ESP32</span>
+            <span class="stack-tag"><span class="sdot dot-cyan"></span>Fingerprint Sensor</span>
+            <span class="stack-tag"><span class="sdot dot-green"></span>PHP</span>
+            <span class="stack-tag"><span class="sdot dot-orange"></span>TiDB</span>
+            <span class="stack-tag"><span class="sdot dot-purple"></span>Render</span>
         </div>
 
         <!-- STATS -->
@@ -398,7 +428,7 @@ footer a:hover{ color:var(--text); }
 
             <div class="portal-head">
                 <h2>System Portal</h2>
-                <p>Login as admin or check your attendance</p>
+                <p>Admin panel or student attendance view</p>
             </div>
 
             <a href="admin/admin_login.php" class="portal-btn btn-admin">
@@ -409,27 +439,24 @@ footer a:hover{ color:var(--text); }
 
             <form action="view_attendance.php" method="GET">
                 <input class="s-input" type="text" name="student_id"
-                       placeholder="Enter your Student ID" required>
+                       placeholder="Enter Student ID" required>
                 <button type="submit" class="portal-btn btn-student">
                     View My Attendance
                 </button>
             </form>
 
-            <!-- INFO BOXES -->
-            <div class="portal-info">
-                <div class="pinfo">
-                    <div class="pinfo-icon">🔒</div>
-                    <div class="pinfo-text">
-                        <strong>Secure Access</strong>
-                        Role-based admin panel with superadmin controls
-                    </div>
+            <div class="portal-stats">
+                <div class="pstat">
+                    <div class="pstat-val">100%</div>
+                    <div class="pstat-label">Accuracy</div>
                 </div>
-                <div class="pinfo">
-                    <div class="pinfo-icon">📊</div>
-                    <div class="pinfo-text">
-                        <strong>Live Reports</strong>
-                        Real-time attendance charts and Excel export
-                    </div>
+                <div class="pstat">
+                    <div class="pstat-val">24/7</div>
+                    <div class="pstat-label">Monitoring</div>
+                </div>
+                <div class="pstat">
+                    <div class="pstat-val">100+</div>
+                    <div class="pstat-label">Students</div>
                 </div>
             </div>
 
@@ -437,6 +464,43 @@ footer a:hover{ color:var(--text); }
     </div>
 
 </section>
+
+<!-- MARQUEE -->
+<div class="marquee-section">
+    <div class="marquee-track">
+        <?php
+        $items = [
+            ["IoT Integration",       "blue"],
+            ["Fingerprint Auth",       "cyan"],
+            ["Real-Time Dashboard",    "green"],
+            ["Auto Absent Marking",    "blue"],
+            ["ESP32 Hardware",         "cyan"],
+            ["Biometric Verification", "green"],
+            ["Attendance Analytics",   "blue"],
+            ["Excel Export",           "cyan"],
+            ["Role-Based Access",      "green"],
+            ["Mobile Responsive",      "blue"],
+            ["Smart Attendance",       "cyan"],
+            ["Final Year Project",     "green"],
+            ["IoT Integration",        "blue"],
+            ["Fingerprint Auth",       "cyan"],
+            ["Real-Time Dashboard",    "green"],
+            ["Auto Absent Marking",    "blue"],
+            ["ESP32 Hardware",         "cyan"],
+            ["Biometric Verification", "green"],
+            ["Attendance Analytics",   "blue"],
+            ["Excel Export",           "cyan"],
+            ["Role-Based Access",      "green"],
+            ["Mobile Responsive",      "blue"],
+            ["Smart Attendance",       "cyan"],
+            ["Final Year Project",     "green"],
+        ];
+        foreach($items as $item){
+            echo '<div class="m-item"><span class="m-dot m-dot-'.$item[1].'"></span>'.$item[0].'</div>';
+        }
+        ?>
+    </div>
+</div>
 
 <!-- FOOTER -->
 <footer>
