@@ -169,7 +169,7 @@ body{ font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text);
     <div class="nav-section">Menu</div>
     <a href="admin_dashboard.php">🏠 Dashboard</a>
     <a href="add_member.php" class="active">➕ Add Member</a>
-    <a href="manage_memberss.php">👥 Manage Members</a>
+    <a href="manage_members.php">👥 Manage Members</a>
     <a href="attendance.php">🗓️ Attendance</a>
     <?php if($admin_role=='superadmin'){ ?><a href="admin_management.php">👮 Admin Management</a><?php } ?>
     <div class="spacer"></div>
@@ -273,7 +273,7 @@ body{ font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text);
                 <p style="font-size:12px;color:var(--muted);line-height:1.7;">
                     Fields marked <span class="req" style="display:inline-block;vertical-align:middle;"></span> are required.
                     Fingerprint ID can be filled later from
-                    <a href="manage_memberss.php" style="color:var(--accent);text-decoration:none;font-weight:600;">Manage Members</a>.
+                    <a href="manage_members.php" style="color:var(--accent);text-decoration:none;font-weight:600;">Manage Members</a>.
                 </p>
             </div>
         </div>

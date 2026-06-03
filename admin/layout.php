@@ -151,7 +151,7 @@ if(!isset($_SESSION['admin'])){
 
 <a href="admin_dashboard.php">🏠 Dashboard</a>
 <a href="add_member.php">➕ Add Student</a>
-<a href="manage_memberss.php">👨‍🎓 Manage Students</a>
+<a href="manage_members.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>
 <a href="admin_management.php">👮 Admin Management</a>
 

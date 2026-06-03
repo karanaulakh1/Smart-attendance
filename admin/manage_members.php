@@ -22,7 +22,7 @@ $att_table    = $active_group_info['attendance_table'];
 if(isset($_GET['delete'])){
     $id = (int)$_GET['delete'];
     mysqli_query($conn,"DELETE FROM `$member_table` WHERE id='$id'");
-    header("Location: manage_memberss.php?group=$active_group");
+    header("Location: manage_members.php?group=$active_group");
     exit();
 }
 
@@ -38,7 +38,7 @@ if(isset($_POST['update_member'])){
     $year           = $_POST['year'];
     $fingerprint_id = $_POST['fingerprint_id'];
     mysqli_query($conn,"UPDATE `$member_table` SET student_id='$student_id',name='$name',email='$email',phone='$phone',department='$department',course='$course',year='$year',fingerprint_id='$fingerprint_id' WHERE id='$id'");
-    header("Location: manage_memberss.php?group=$active_group");
+    header("Location: manage_members.php?group=$active_group");
     exit();
 }
 
@@ -149,7 +149,7 @@ tbody tr:hover td{ background:rgba(255,255,255,.025); }
     <div class="nav-section">Menu</div>
     <a href="admin_dashboard.php">🏠 Dashboard</a>
     <a href="add_member.php">➕ Add Member</a>
-    <a href="manage_memberss.php" class="active">👥 Manage Members</a>
+    <a href="manage_members.php" class="active">👥 Manage Members</a>
     <a href="attendance.php">🗓️ Attendance</a>
     <?php if($admin_role=='superadmin'){ ?><a href="admin_management.php">👮 Admin Management</a><?php } ?>
     <div class="spacer"></div>
@@ -172,13 +172,13 @@ tbody tr:hover td{ background:rgba(255,255,255,.025); }
 
     <!-- GROUP TABS -->
     <div class="group-tabs">
-        <?php foreach($groups as $g){ $ac = $g['table_name']===$active_group ? 'active' : ''; echo '<a href="manage_memberss.php?group='.$g['table_name'].'" class="gtab '.$ac.'">'.htmlspecialchars($g['group_name']).'</a>'; } ?>
+        <?php foreach($groups as $g){ $ac = $g['table_name']===$active_group ? 'active' : ''; echo '<a href="manage_members.php?group='.$g['table_name'].'" class="gtab '.$ac.'">'.htmlspecialchars($g['group_name']).'</a>'; } ?>
     </div>
 
     <?php
     $count = mysqli_num_rows($members);
     if($search != ""){
-        echo "<div class='search-meta'>Showing <span>$count</span> result".($count!=1?'s':'')." for \"<span>".htmlspecialchars($search)."</span>\" in <span>".htmlspecialchars($active_group_info['group_name'])."</span> — <a href='manage_memberss.php?group=$active_group' style='color:var(--accent);text-decoration:none;font-weight:600;'>Clear</a></div>";
+        echo "<div class='search-meta'>Showing <span>$count</span> result".($count!=1?'s':'')." for \"<span>".htmlspecialchars($search)."</span>\" in <span>".htmlspecialchars($active_group_info['group_name'])."</span> — <a href='manage_members.php?group=$active_group' style='color:var(--accent);text-decoration:none;font-weight:600;'>Clear</a></div>";
     } else {
         echo "<div class='search-meta'><span>$total</span> member".($total!=1?'s':'')." in <span>".htmlspecialchars($active_group_info['group_name'])."</span></div>";
     }
@@ -220,8 +220,8 @@ tbody tr:hover td{ background:rgba(255,255,255,.025); }
                     <td>
                         <div class="action">
                             <a href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>&group=<?php echo $active_group; ?>" class="act-btn btn-enroll">Enroll</a>
-                            <a href="manage_memberss.php?group=<?php echo $active_group; ?>&edit=<?php echo $row['id']; ?>" class="act-btn btn-edit">Edit</a>
-                            <a href="manage_memberss.php?group=<?php echo $active_group; ?>&delete=<?php echo $row['id']; ?>" class="act-btn btn-delete" onclick="return confirmDelete('<?php echo htmlspecialchars($row['name']); ?>')">Delete</a>
+                            <a href="manage_members.php?group=<?php echo $active_group; ?>&edit=<?php echo $row['id']; ?>" class="act-btn btn-edit">Edit</a>
+                            <a href="manage_members.php?group=<?php echo $active_group; ?>&delete=<?php echo $row['id']; ?>" class="act-btn btn-delete" onclick="return confirmDelete('<?php echo htmlspecialchars($row['name']); ?>')">Delete</a>
                         </div>
                     </td>
                 </tr>
@@ -240,7 +240,7 @@ tbody tr:hover td{ background:rgba(255,255,255,.025); }
     <div class="modal-box">
         <div class="modal-head">
             <h2>Edit Member</h2>
-            <a href="manage_memberss.php?group=<?php echo $active_group; ?>" class="modal-close">✕</a>
+            <a href="manage_members.php?group=<?php echo $active_group; ?>" class="modal-close">✕</a>
         </div>
         <form method="POST">
             <input type="hidden" name="id" value="<?php echo $editData['id']; ?>">
