@@ -20,7 +20,7 @@ if(isset($_GET['student_id'])){
 
     alert('Enrollment Request Sent');
 
-    window.location='manage_members.php';
+    window.location='manage_memberss.php';
 
     </script>
 

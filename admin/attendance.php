@@ -150,7 +150,7 @@ tbody tr:hover td{ background:rgba(255,255,255,.025); }
     <div class="nav-section">Menu</div>
     <a href="admin_dashboard.php">🏠 Dashboard</a>
     <a href="add_member.php">➕ Add Member</a>
-    <a href="manage_members.php">👥 Manage Members</a>
+    <a href="manage_memberss.php">👥 Manage Members</a>
     <a href="attendance.php" class="active">🗓️ Attendance</a>
     <?php if($admin_role=='superadmin'){ ?><a href="admin_management.php">👮 Admin Management</a><?php } ?>
     <div class="spacer"></div>
