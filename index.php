@@ -414,7 +414,6 @@ footer a:hover{ color:var(--text); }
         Smart Attendance
     </a>
     <div class="nav-actions">
-        <span class="nav-tag">Major Project 2026</span>
         <a href="aboutus.php" class="nav-btn nav-btn-ghost">About Us</a>
         <a href="admin/admin_login.php" class="nav-btn nav-btn-solid">Admin Login</a>
     </div>

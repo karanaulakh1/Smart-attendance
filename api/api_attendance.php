@@ -43,7 +43,7 @@ mysqli_query($conn,
 // ── ATTENDANCE WINDOW ───────────────────────────────────────────────────
 $start_time = "09:15";
 $end_time   = "18:30"; // extended to allow OUT scans in evening
-$late_after = "09:30";
+$late_after = "10:30";
 
 if($current_time < $start_time){
     echo "Attendance Not Started";
