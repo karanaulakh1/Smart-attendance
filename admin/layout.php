@@ -150,7 +150,7 @@ if(!isset($_SESSION['admin'])){
 <div class="logo">📘 Smart<br>Attendance</div>
 
 <a href="admin_dashboard.php">🏠 Dashboard</a>
-<a href="add_student.php">➕ Add Student</a>
+<a href="add_member.php">➕ Add Student</a>
 <a href="manage_students.php">👨‍🎓 Manage Students</a>
 <a href="attendance.php">🗓️ Attendance</a>
 <a href="admin_management.php">👮 Admin Management</a>
