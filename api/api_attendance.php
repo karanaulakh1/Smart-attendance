@@ -10,7 +10,7 @@
  * URL: https://yoursite.onrender.com/mark_attendance.php?fingerprint_id=1&key=smartattend2026
  */
 
-include("database.php");
+include("../database.php");
 date_default_timezone_set("Asia/Kolkata");
 
 // ── SECRET KEY ──────────────────────────────────────────────────────────
