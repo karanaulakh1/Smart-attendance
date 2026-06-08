@@ -60,13 +60,13 @@ if(!empty($course))     $parts[] = $course;
 if(!empty($student_id)) $parts[] = $student_id;
 if(!empty($from_date))  $parts[] = $from_date;
 if(!empty($to_date))    $parts[] = 'to_'.$to_date;
-$filename = strtolower(str_replace([' ','/','\\'], '_', implode('_', $parts))) . '.xlsx';
+$filename = strtolower(str_replace([' ','/','\\'], '_', implode('_', $parts))) . '.csv';
 
 // ── USE PHP XLSXWRITER FOR PROPER EXCEL OUTPUT ─────────────────────────
 // Since we don't have xlsxwriter, we output a proper UTF-8 CSV
 // that Excel can read correctly by using tab-separated or with BOM
 
-header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Pragma: no-cache');
 header('Expires: 0');
