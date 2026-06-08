@@ -393,6 +393,38 @@ tbody tr:hover td{ background:rgba(255,255,255,.02); }
 
         <hr class="divider-line">
 
+        <!-- EXPORT SINGLE MEMBER -->
+        <div class="card-head"><h2>Export Single Member</h2></div>
+        <form method="GET" action="export_excel.php">
+            <input type="hidden" name="group" value="<?php echo $active_group; ?>">
+            <input type="hidden" name="att_table" value="<?php echo $att_table; ?>">
+            <div class="form-row">
+                <div class="form-field" style="flex:2;">
+                    <label>Select Member</label>
+                    <select class="f-select" name="student_id" required>
+                        <option value="">Select Member</option>
+                        <?php
+                        $ml2 = $conn->query("SELECT * FROM `$member_table` ORDER BY name ASC");
+                        while($row=$ml2->fetch_assoc()){
+                            echo '<option value="'.htmlspecialchars($row['student_id']).'">'.htmlspecialchars($row['name']).' · '.$row['student_id'].'</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>From Date</label>
+                    <input class="f-input" type="date" name="from_date" value="<?php echo date('Y-m-01'); ?>">
+                </div>
+                <div class="form-field">
+                    <label>To Date</label>
+                    <input class="f-input" type="date" name="to_date" value="<?php echo date('Y-m-d'); ?>">
+                </div>
+                <button type="submit" class="btn btn-amber" style="align-self:flex-end;">Export Member</button>
+            </div>
+        </form>
+
+        <hr class="divider-line">
+
         <!-- MARK -->
         <div class="card-head"><h2>Mark Attendance</h2><span class="count-pill"><?php echo htmlspecialchars($active_info['group_name']); ?></span></div>
         <form method="POST">
