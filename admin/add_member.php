@@ -79,27 +79,60 @@ if(isset($_POST['add_member'])){
 
     // Validate group exists in registry
     $valid_group = false;
-    foreach($groups as $g){ if($g['table_name']===$group_table){ $valid_group=true; break; } }
+    $gname_label = '';
+    foreach($groups as $g){
+        if($g['table_name']===$group_table){
+            $valid_group = true;
+            $gname_label = $g['group_name'];
+            break;
+        }
+    }
 
     if(!$valid_group){
         $error = "Invalid group selected.";
+
+    // Course is mandatory
+    } elseif(empty($course)){
+        $error = "Course / Designation is required.";
+
+    // Fingerprint ID is mandatory
+    } elseif(empty($fingerprint_id)){
+        $error = "Fingerprint ID is required.";
+
     } else {
-        $dup = $conn->query("SELECT id FROM `$group_table` WHERE student_id='$student_id'");
-        if($dup->num_rows > 0){
-            $error = "ID \"$student_id\" already exists in this group.";
+
+        // Check duplicate Member ID in this group
+        $dup_id = $conn->query("SELECT id, name FROM `$group_table` WHERE student_id='$student_id'");
+        if($dup_id->num_rows > 0){
+            $dup_row = $dup_id->fetch_assoc();
+            $error = "Member ID \"$student_id\" already exists in $gname_label (assigned to ".htmlspecialchars($dup_row['name']).").";
+
         } else {
-            $ins = $conn->query("
-                INSERT INTO `$group_table`
-                (student_id, name, email, phone, department, course, year, fingerprint_id)
-                VALUES
-                ('$student_id','$name','$email','$phone','$department','$course','$year','$fingerprint_id')
-            ");
-            if($ins){
-                $gname_label = '';
-                foreach($groups as $g){ if($g['table_name']===$group_table){ $gname_label=$g['group_name']; break; } }
-                $success = "Member added successfully to ".htmlspecialchars($gname_label).".";
+            // Check duplicate Fingerprint ID across ALL groups
+            $fp_conflict = null;
+            foreach($groups as $chk_group){
+                $fp_check = $conn->query("SELECT student_id, name FROM `".$chk_group['table_name']."` WHERE fingerprint_id='$fingerprint_id'");
+                if($fp_check && $fp_check->num_rows > 0){
+                    $fp_row = $fp_check->fetch_assoc();
+                    $fp_conflict = "Fingerprint ID \"$fingerprint_id\" is already registered to ".htmlspecialchars($fp_row['name'])." (ID: ".$fp_row['student_id'].") in ".$chk_group['group_name'].".";
+                    break;
+                }
+            }
+
+            if($fp_conflict){
+                $error = $fp_conflict;
             } else {
-                $error = "Database error: " . $conn->error;
+                $ins = $conn->query("
+                    INSERT INTO `$group_table`
+                    (student_id, name, email, phone, department, course, year, fingerprint_id)
+                    VALUES
+                    ('$student_id','$name','$email','$phone','$department','$course','$year','$fingerprint_id')
+                ");
+                if($ins){
+                    $success = "Member added successfully to ".htmlspecialchars($gname_label).".";
+                } else {
+                    $error = "Database error: " . $conn->error;
+                }
             }
         }
     }
@@ -308,8 +341,8 @@ body{ font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text);
                     </div>
 
                     <div class="input-wrap">
-                        <label>Course / Designation</label>
-                        <input class="f-input" type="text" name="course" placeholder="e.g. B.Tech / Professor">
+                        <label>Course / Designation <span class="req"></span></label>
+                        <input class="f-input" type="text" name="course" placeholder="e.g. B.Tech / Professor" required>
                     </div>
 
                     <div class="input-wrap">
@@ -318,8 +351,8 @@ body{ font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text);
                     </div>
 
                     <div class="input-wrap">
-                        <label>Fingerprint ID</label>
-                        <input class="f-input" type="text" name="fingerprint_id" placeholder="e.g. FP-001">
+                        <label>Fingerprint ID <span class="req"></span></label>
+                        <input class="f-input" type="text" name="fingerprint_id" placeholder="e.g. FP-001" required>
                     </div>
 
                     <div class="full">
@@ -401,8 +434,8 @@ body{ font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text);
                 <div class="info-card-title">Note</div>
                 <p style="font-size:12px;color:var(--muted);line-height:1.7;">
                     Fields marked <span class="req" style="display:inline-block;vertical-align:middle;"></span> are required.
-                    Fingerprint ID can be filled later from
-                    <a href="manage_members.php" style="color:var(--accent);text-decoration:none;font-weight:600;">Manage Members</a>.
+                    Member ID, Name, Course, and Fingerprint ID must all be filled.
+                    Fingerprint ID must be unique across all groups.
                     IN/OUT times are recorded automatically by the ESP32 device on each scan.
                 </p>
             </div>
