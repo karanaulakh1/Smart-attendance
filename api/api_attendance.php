@@ -1,13 +1,13 @@
 <?php
 /**
- * mark_attendance.php
+ * api_attendance.php
  * ESP32 endpoint — NO time window restriction
  *
  * 1st scan of the day = IN  (status = Present, in_time = now)
  * 2nd scan of the day = OUT (out_time = now, working_hours calculated)
  * 3rd+ scan           = Already Marked
  *
- * URL: https://yoursite.onrender.com/mark_attendance.php?fingerprint_id=1&key=smartattend2026
+ * URL: https://yoursite.onrender.com/attendance.php?fingerprint_id=1&key=smartattend2026
  */
 
 include("../database.php");

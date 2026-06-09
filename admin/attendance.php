@@ -23,7 +23,7 @@ $success = $error = "";
 $today   = date("Y-m-d");
 
 /* MARK ATTENDANCE (manual) */
-if(isset($_POST['mark_attendance'])){
+if(isset($_POST['api_attendance'])){
     $student_id = $_POST['student_id'];
     $status     = $_POST['status'];
     $in_time    = !empty($_POST['in_time'])  ? date("h:i A", strtotime($_POST['in_time'])) : null;
@@ -453,7 +453,7 @@ tbody tr:hover td{ background:rgba(255,255,255,.02); }
                     <label>Out Time</label>
                     <input class="f-input" type="time" name="out_time">
                 </div>
-                <button type="submit" name="mark_attendance" class="btn btn-primary" style="align-self:flex-end;">Mark</button>
+                <button type="submit" name="api_attendance" class="btn btn-primary" style="align-self:flex-end;">Mark</button>
             </div>
         </form>
     </div>
