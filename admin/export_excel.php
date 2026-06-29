@@ -1,8 +1,8 @@
 <?php
 /**
  * export_excel.php
- * Generates a real .xlsx file via a Python/openpyxl helper script
- * Columns are auto-sized, headers are styled, summary is highlighted
+ * Pure PHP .xlsx writer — no Python, no libraries, works on Render free tier
+ * .xlsx = ZIP containing XML files — built with PHP's built-in ZipArchive
  */
 
 session_start();
@@ -20,335 +20,361 @@ $to_date    = isset($_GET['to_date'])    ? $_GET['to_date']    : '';
 $student_id = isset($_GET['student_id']) ? $_GET['student_id'] : '';
 
 // ── VALIDATE GROUP ───────────────────────────────────────────────────────
-$valid = $conn->query("SELECT * FROM groups_registry WHERE table_name='$group' AND attendance_table='$att_table'");
+$valid = $conn->query("SELECT * FROM groups_registry
+    WHERE table_name='$group' AND attendance_table='$att_table'");
 if(!$valid || $valid->num_rows === 0) die("Invalid group.");
 $group_info   = $valid->fetch_assoc();
 $group_name   = $group_info['group_name'];
 $member_table = $group;
 
 // ── WHERE CLAUSE ─────────────────────────────────────────────────────────
-$conditions = [];
-if(!empty($course))     $conditions[] = "m.course = '$course'";
-if(!empty($from_date))  $conditions[] = "a.date >= '$from_date'";
-if(!empty($to_date))    $conditions[] = "a.date <= '$to_date'";
-if(!empty($student_id)) $conditions[] = "a.student_id = '$student_id'";
-$where = count($conditions) > 0 ? "WHERE " . implode(" AND ", $conditions) : "";
+$conds = [];
+if(!empty($course))     $conds[] = "m.course='$course'";
+if(!empty($from_date))  $conds[] = "a.date>='$from_date'";
+if(!empty($to_date))    $conds[] = "a.date<='$to_date'";
+if(!empty($student_id)) $conds[] = "a.student_id='$student_id'";
+$where = $conds ? "WHERE ".implode(" AND ",$conds) : "";
 
-// ── CHECK IN/OUT COLS ────────────────────────────────────────────────────
+// ── CHECK IN/OUT COLUMNS ──────────────────────────────────────────────────
 $col_check = $conn->query("SHOW COLUMNS FROM `$att_table` LIKE 'in_time'");
 $has_inout  = ($col_check && $col_check->num_rows > 0);
 
-// ── QUERY ────────────────────────────────────────────────────────────────
-$sql = "
-    SELECT
-        a.student_id,
-        m.name,
-        m.department,
-        m.course,
-        m.year,
-        a.date,
-        DAYNAME(a.date) as day_name,
-        a.status,
-        " . ($has_inout ? "a.in_time, a.out_time, a.working_hours" : "NULL as in_time, NULL as out_time, NULL as working_hours") . "
-    FROM `$att_table` a
-    LEFT JOIN `$member_table` m ON a.student_id = m.student_id
-    $where
-    ORDER BY a.date DESC, m.name ASC
-";
+// ── QUERY ─────────────────────────────────────────────────────────────────
+$sql = "SELECT a.student_id, m.name, m.department, m.course, m.year,
+               a.date, DAYNAME(a.date) as day_name, a.status,
+               ".($has_inout ? "a.in_time, a.out_time, a.working_hours" :
+                               "NULL as in_time, NULL as out_time, NULL as working_hours")."
+        FROM `$att_table` a
+        LEFT JOIN `$member_table` m ON a.student_id=m.student_id
+        $where
+        ORDER BY a.date DESC, m.name ASC";
+
 $result = $conn->query($sql);
-if(!$result) die("Query error: " . $conn->error);
+if(!$result) die("Query error: ".$conn->error);
 
-// ── COLLECT DATA ─────────────────────────────────────────────────────────
-$rows            = [];
-$total_present   = 0;
-$total_absent    = 0;
-$total_late      = 0;
-$total_hours_sec = 0;
-$hours_count     = 0;
+// ── COLLECT DATA ──────────────────────────────────────────────────────────
+$rows = [];
+$total_present = $total_absent = $total_late = 0;
+$total_sec = $hours_count = 0;
 
-while($row = $result->fetch_assoc()){
-    if($row['status'] === 'Present')    $total_present++;
-    elseif($row['status'] === 'Absent') $total_absent++;
-    elseif($row['status'] === 'Late')   $total_late++;
+while($r = $result->fetch_assoc()){
+    if($r['status']==='Present')     $total_present++;
+    elseif($r['status']==='Absent')  $total_absent++;
+    elseif($r['status']==='Late')    $total_late++;
 
-    if(!empty($row['working_hours']) && $row['working_hours'] !== '00:00'){
-        $p = explode(':', $row['working_hours']);
-        if(count($p) === 2){
-            $total_hours_sec += ((int)$p[0] * 3600) + ((int)$p[1] * 60);
+    if(!empty($r['working_hours']) && $r['working_hours']!=='00:00'){
+        $p = explode(':', $r['working_hours']);
+        if(count($p)===2){
+            $total_sec += (int)$p[0]*3600 + (int)$p[1]*60;
             $hours_count++;
         }
     }
-
-    $rows[] = [
-        $row['student_id']    ?? '',
-        $row['name']          ?? '',
-        $row['department']    ?? '',
-        $row['course']        ?? '',
-        $row['year']          ?? '',
-        !empty($row['date'])  ? date("d M Y", strtotime($row['date'])) : '',
-        $row['day_name']      ?? '',
-        $row['status']        ?? '',
-        $row['in_time']       ?? 'Not recorded',
-        $row['out_time']      ?? 'Not recorded',
-        $row['working_hours'] ?? 'N/A',
-    ];
+    $rows[] = $r;
 }
 
-// ── SUMMARY ──────────────────────────────────────────────────────────────
 $total_days = $total_present + $total_absent + $total_late;
-$rate       = $total_days > 0 ? round(($total_present / $total_days) * 100) : 0;
+$rate       = $total_days > 0 ? round($total_present/$total_days*100) : 0;
+$total_h    = $hours_count > 0 ? sprintf("%02d:%02d", floor($total_sec/3600), floor(($total_sec%3600)/60)) : 'N/A';
+$avg_h      = $hours_count > 0 ? sprintf("%02d:%02d", floor(($total_sec/$hours_count)/3600), floor((($total_sec/$hours_count)%3600)/60)) : 'N/A';
 
-$total_h_str = '—';
-$avg_h_str   = '—';
-if($hours_count > 0){
-    $th = floor($total_hours_sec / 3600);
-    $tm = floor(($total_hours_sec % 3600) / 60);
-    $total_h_str = sprintf("%02d:%02d", $th, $tm);
-    $as = $total_hours_sec / $hours_count;
-    $avg_h_str = sprintf("%02d:%02d", floor($as/3600), floor(($as%3600)/60));
-}
+// ── FILENAME ──────────────────────────────────────────────────────────────
+$fparts = ['attendance', $group_name];
+if($course)     $fparts[] = $course;
+if($student_id) $fparts[] = $student_id;
+if($from_date)  $fparts[] = $from_date;
+if($to_date)    $fparts[] = 'to_'.$to_date;
+$filename = strtolower(str_replace([' ','/','\\'],'_',implode('_',$fparts))).'.xlsx';
 
-// ── META ─────────────────────────────────────────────────────────────────
-$meta = [
-    'generated'   => date("d M Y, h:i A"),
-    'group'       => $group_name,
-    'course'      => $course ?: 'All',
-    'member_id'   => $student_id ?: 'All',
-    'from_date'   => $from_date ?: 'All',
-    'to_date'     => $to_date   ?: 'All',
-    'total_records' => count($rows),
-];
+// ════════════════════════════════════════════════════════════════════════
+// PURE PHP XLSX BUILDER
+// .xlsx = ZIP with these files inside:
+//   [Content_Types].xml
+//   _rels/.rels
+//   xl/workbook.xml
+//   xl/_rels/workbook.xml.rels
+//   xl/styles.xml
+//   xl/sharedStrings.xml  (string table)
+//   xl/worksheets/sheet1.xml
+// ════════════════════════════════════════════════════════════════════════
 
-$summary = [
-    'total_present'  => $total_present,
-    'total_absent'   => $total_absent,
-    'total_late'     => $total_late,
-    'total_days'     => $total_days,
-    'total_hours'    => $total_h_str,
-    'avg_hours'      => $avg_h_str,
-    'rate'           => $rate . '%',
-];
+// ── HELPER: escape XML special chars ─────────────────────────────────────
+function xe($s){ return htmlspecialchars((string)$s, ENT_XML1, 'UTF-8'); }
 
-// ── FILENAME ─────────────────────────────────────────────────────────────
-$fname_parts = ['attendance', $group_name];
-if(!empty($course))     $fname_parts[] = $course;
-if(!empty($student_id)) $fname_parts[] = $student_id;
-if(!empty($from_date))  $fname_parts[] = $from_date;
-if(!empty($to_date))    $fname_parts[] = 'to_'.$to_date;
-$filename = strtolower(str_replace([' ','/','\\'], '_', implode('_', $fname_parts))) . '.xlsx';
-
-// ── WRITE PYTHON SCRIPT + JSON DATA TO TEMP FILES ────────────────────────
-$tmp_dir  = sys_get_temp_dir();
-$data_file = $tmp_dir . '/att_data_' . session_id() . '.json';
-$out_file  = $tmp_dir . '/att_out_'  . session_id() . '.xlsx';
-$py_file   = $tmp_dir . '/att_gen_'  . session_id() . '.py';
-
-// Write data as JSON
-file_put_contents($data_file, json_encode([
-    'meta'    => $meta,
-    'rows'    => $rows,
-    'summary' => $summary,
-    'filename'=> $filename,
-]));
-
-// Write Python script
-$py_script = <<<'PYTHON'
-import json, sys
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
-
-data_file = sys.argv[1]
-out_file  = sys.argv[2]
-
-with open(data_file) as f:
-    d = json.load(f)
-
-meta    = d['meta']
-rows    = d['rows']
-summary = d['summary']
-
-wb = Workbook()
-ws = wb.active
-ws.title = "Attendance"
-
-# ── COLORS ───────────────────────────────────────────────────────
-C_HEADER_BG  = "1E3A5F"   # dark blue
-C_HEADER_FG  = "FFFFFF"   # white
-C_META_BG    = "EEF2FF"   # light lavender
-C_META_FG    = "1E3A5F"
-C_COL_HEADER = "2D6A4F"   # dark green
-C_COL_FG     = "FFFFFF"
-C_PRESENT    = "D1FAE5"   # light green
-C_ABSENT     = "FFE4E6"   # light red
-C_LATE       = "FEF3C7"   # light amber
-C_SUMMARY_BG = "1E3A5F"
-C_SUMMARY_FG = "FFFFFF"
-C_ALT_ROW    = "F8FAFC"   # very light grey
-
-def hfont(bold=False, color="000000", size=11):
-    return Font(name="Arial", bold=bold, color=color, size=size)
-
-def hfill(color):
-    return PatternFill("solid", start_color=color, fgColor=color)
-
-def hborder():
-    s = Side(style="thin", color="D1D5DB")
-    return Border(left=s, right=s, top=s, bottom=s)
-
-def center():
-    return Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-def left():
-    return Alignment(horizontal="left", vertical="center", wrap_text=True)
-
-# ── REPORT TITLE ─────────────────────────────────────────────────
-ws.merge_cells("A1:K1")
-title_cell = ws["A1"]
-title_cell.value     = "SMART ATTENDANCE SYSTEM — Export Report"
-title_cell.font      = hfont(bold=True, color=C_HEADER_FG, size=14)
-title_cell.fill      = hfill(C_HEADER_BG)
-title_cell.alignment = center()
-ws.row_dimensions[1].height = 28
-
-# ── META INFO ────────────────────────────────────────────────────
-meta_rows = [
-    ("Generated On",  meta['generated']),
-    ("Group",         meta['group']),
-    ("Course / Dept", meta['course']),
-    ("Member ID",     meta['member_id']),
-    ("Date Range",    meta['from_date'] + " to " + meta['to_date']),
-    ("Total Records", str(meta['total_records'])),
-]
-for i, (label, value) in enumerate(meta_rows, 2):
-    lc = ws.cell(row=i, column=1, value=label)
-    vc = ws.cell(row=i, column=2, value=value)
-    ws.merge_cells(f"B{i}:K{i}")
-    lc.font = hfont(bold=True, color=C_META_FG)
-    vc.font = hfont(color=C_META_FG)
-    for col in range(1, 12):
-        ws.cell(row=i, column=col).fill = hfill(C_META_BG)
-        ws.cell(row=i, column=col).alignment = left()
-
-# blank row after meta
-blank_row = len(meta_rows) + 2 + 1  # row 9
-ws.row_dimensions[blank_row].height = 8
-
-# ── COLUMN HEADERS ───────────────────────────────────────────────
-header_row = blank_row + 1  # row 10
-headers = ["#", "Member ID", "Name", "Department", "Course",
-           "Year", "Date", "Day", "Status", "In Time", "Out Time", "Working Hours"]
-# Add extra # column
-for col, h in enumerate(headers, 1):
-    c = ws.cell(row=header_row, column=col, value=h)
-    c.font      = hfont(bold=True, color=C_COL_FG, size=10)
-    c.fill      = hfill(C_COL_HEADER)
-    c.alignment = center()
-    c.border    = hborder()
-ws.row_dimensions[header_row].height = 22
-
-# ── DATA ROWS ────────────────────────────────────────────────────
-for i, row in enumerate(rows, 1):
-    excel_row = header_row + i
-    # Row number first
-    num_cell = ws.cell(row=excel_row, column=1, value=i)
-    num_cell.font      = hfont(color="9CA3AF", size=10)
-    num_cell.alignment = center()
-    num_cell.border    = hborder()
-
-    status = row[7] if len(row) > 7 else ""
-    if status   == "Present": row_fill = hfill(C_PRESENT)
-    elif status == "Absent":  row_fill = hfill(C_ABSENT)
-    elif status == "Late":    row_fill = hfill(C_LATE)
-    else:                     row_fill = hfill(C_ALT_ROW) if i % 2 == 0 else PatternFill()
-
-    for col, val in enumerate(row, 2):
-        c = ws.cell(row=excel_row, column=col, value=val)
-        c.font      = hfont(size=10)
-        c.alignment = center() if col in [1, 6, 7, 8, 9, 10, 11, 12] else left()
-        c.border    = hborder()
-        c.fill      = row_fill
-
-    ws.row_dimensions[excel_row].height = 18
-
-# ── BLANK ROW ────────────────────────────────────────────────────
-summary_start = header_row + len(rows) + 2
-
-# ── SUMMARY HEADER ───────────────────────────────────────────────
-ws.merge_cells(f"A{summary_start}:K{summary_start}")
-sh = ws.cell(row=summary_start, column=1, value="ATTENDANCE SUMMARY")
-sh.font      = hfont(bold=True, color=C_HEADER_FG, size=12)
-sh.fill      = hfill(C_HEADER_BG)
-sh.alignment = center()
-ws.row_dimensions[summary_start].height = 24
-
-sum_rows = [
-    ("Total Present",        str(summary['total_present'])),
-    ("Total Absent",         str(summary['total_absent'])),
-    ("Total Late",           str(summary['total_late'])),
-    ("Total Days",           str(summary['total_days'])),
-    ("Total Working Hours",  summary['total_hours']),
-    ("Avg Working Hours/Day",summary['avg_hours']),
-    ("Attendance Rate",      summary['rate']),
-]
-for j, (label, value) in enumerate(sum_rows):
-    r = summary_start + 1 + j
-    lc = ws.cell(row=r, column=1, value=label)
-    vc = ws.cell(row=r, column=2, value=value)
-    ws.merge_cells(f"B{r}:K{r}")
-    lc.font = hfont(bold=True, color=C_META_FG)
-    vc.font = hfont(bold=True, color="1D4ED8")
-    for col in range(1, 12):
-        ws.cell(row=r, column=col).fill = hfill("EEF2FF")
-        ws.cell(row=r, column=col).border = hborder()
-        ws.cell(row=r, column=col).alignment = left()
-    ws.row_dimensions[r].height = 18
-
-# ── COLUMN WIDTHS ────────────────────────────────────────────────
-col_widths = [5, 14, 26, 22, 18, 10, 14, 12, 10, 12, 12, 15]
-for i, w in enumerate(col_widths, 1):
-    ws.column_dimensions[get_column_letter(i)].width = w
-
-# ── FREEZE PANES ─────────────────────────────────────────────────
-ws.freeze_panes = f"A{header_row + 1}"
-
-wb.save(out_file)
-print("OK")
-PYTHON;
-
-file_put_contents($py_file, $py_script);
-
-// ── RUN PYTHON ───────────────────────────────────────────────────────────
-$cmd    = escapeshellcmd("python3 $py_file $data_file $out_file") . " 2>&1";
-$output = shell_exec($cmd);
-
-// Cleanup temp files
-@unlink($data_file);
-@unlink($py_file);
-
-if(!file_exists($out_file) || trim($output) !== 'OK'){
-    // Fallback to CSV if Python fails
-    @unlink($out_file);
-    header('Content-Type: text/csv; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="' . str_replace('.xlsx','.csv',$filename) . '"');
-    $out = fopen('php://output','w');
-    fputs($out, "\xEF\xBB\xBF");
-    fputcsv($out, ['#','Member ID','Name','Department','Course','Year','Date','Day','Status','In Time','Out Time','Working Hours']);
-    foreach($rows as $i => $row){
-        fputcsv($out, array_merge([$i+1], $row));
+// ── HELPER: col letter from 1-based index ────────────────────────────────
+function colLetter($n){
+    $s='';
+    while($n>0){
+        $n--; $s=chr(65+($n%26)).$s; $n=floor($n/26);
     }
-    fclose($out);
-    exit();
+    return $s;
 }
 
-// ── SEND XLSX ────────────────────────────────────────────────────────────
+// ── SHARED STRINGS TABLE ─────────────────────────────────────────────────
+// All cell text goes through a shared strings table for proper UTF-8
+$strings    = [];
+$strIndex   = [];
+function si($val){
+    global $strings, $strIndex;
+    $val = (string)$val;
+    if(!isset($strIndex[$val])){
+        $strIndex[$val] = count($strings);
+        $strings[] = $val;
+    }
+    return $strIndex[$val];
+}
+
+// ── STYLE INDEXES (defined in styles.xml) ────────────────────────────────
+// 0 = default
+// 1 = title        (bold, white, dark-blue bg)
+// 2 = meta-label   (bold, dark-blue text, light-blue bg)
+// 3 = meta-value   (normal, dark-blue text, light-blue bg)
+// 4 = col-header   (bold, white, dark-green bg)
+// 5 = data-normal  (normal, borders)
+// 6 = data-present (normal, light-green bg, borders)
+// 7 = data-absent  (normal, light-red bg, borders)
+// 8 = data-late    (normal, light-amber bg, borders)
+// 9 = summary-hdr  (bold, white, dark-blue bg)
+// 10= summary-val  (bold, blue text, light-blue bg)
+// 11= data-altrow  (normal, light-grey bg, borders)
+
+// ── BUILD WORKSHEET ROWS ─────────────────────────────────────────────────
+$xmlRows = '';
+
+// row helper: builds one <row> element
+// $cells = array of [colIdx, value, styleIdx, isNumber]
+function buildRow($rowNum, $cells){
+    $r = '<row r="'.$rowNum.'">';
+    foreach($cells as $c){
+        list($col, $val, $style, $isNum) = $c + [3=>false];
+        $ref = colLetter($col).$rowNum;
+        if($isNum){
+            $r .= '<c r="'.$ref.'" s="'.$style.'"><v>'.xe($val).'</v></c>';
+        } else {
+            $idx = si($val);
+            $r .= '<c r="'.$ref.'" t="s" s="'.$style.'"><v>'.$idx.'</v></c>';
+        }
+    }
+    $r .= '</row>';
+    return $r;
+}
+
+$ROW = 1;
+$COLS = 12; // total columns
+
+// ── ROW 1: TITLE ──────────────────────────────────────────────────────────
+$cells = [[1, 'SMART ATTENDANCE SYSTEM — Export Report', 1, false]];
+// fill remaining cols with title style for merged look
+for($c=2;$c<=$COLS;$c++) $cells[] = [$c,'',1,false];
+$xmlRows .= buildRow($ROW++, $cells);
+
+// ── ROWS 2-7: META INFO ───────────────────────────────────────────────────
+$metaData = [
+    ['Generated On',  date("d M Y, h:i A")],
+    ['Group',         $group_name],
+    ['Course / Dept', $course ?: 'All'],
+    ['Member ID',     $student_id ?: 'All'],
+    ['Date Range',    ($from_date?:'All').' to '.($to_date?:'All')],
+    ['Total Records', count($rows)],
+];
+foreach($metaData as $m){
+    $cells = [[1, $m[0], 2, false], [2, $m[1], 3, false]];
+    for($c=3;$c<=$COLS;$c++) $cells[] = [$c,'',3,false];
+    $xmlRows .= buildRow($ROW++, $cells);
+}
+
+// ── ROW 8: BLANK ─────────────────────────────────────────────────────────
+$cells=[];
+for($c=1;$c<=$COLS;$c++) $cells[] = [$c,'',0,false];
+$xmlRows .= buildRow($ROW++, $cells);
+
+// ── ROW 9: COLUMN HEADERS ─────────────────────────────────────────────────
+$headers = ['#','Member ID','Name','Department','Course','Year',
+            'Date','Day','Status','In Time','Out Time','Working Hours'];
+$cells=[];
+foreach($headers as $i=>$h) $cells[] = [$i+1, $h, 4, false];
+$xmlRows .= buildRow($ROW++, $cells);
+$dataStartRow = $ROW;
+
+// ── DATA ROWS ─────────────────────────────────────────────────────────────
+foreach($rows as $i=>$r){
+    $s = $r['status'];
+    if($s==='Present')     $style = 6;
+    elseif($s==='Absent')  $style = 7;
+    elseif($s==='Late')    $style = 8;
+    else                   $style = ($i%2===0) ? 11 : 5;
+
+    $wh = $r['working_hours'] ?: 'N/A';
+    if($wh==='00:00') $wh='N/A';
+
+    $cells = [
+        [1,  $i+1,                                                 $style, true],
+        [2,  $r['student_id']  ?? '',                              $style, false],
+        [3,  $r['name']        ?? '',                              $style, false],
+        [4,  $r['department']  ?? '',                              $style, false],
+        [5,  $r['course']      ?? '',                              $style, false],
+        [6,  $r['year']        ?? '',                              $style, false],
+        [7,  !empty($r['date']) ? date("d M Y",strtotime($r['date'])) : '', $style, false],
+        [8,  $r['day_name']    ?? '',                              $style, false],
+        [9,  $s,                                                   $style, false],
+        [10, $r['in_time']     ?? 'Not recorded',                  $style, false],
+        [11, $r['out_time']    ?? 'Not recorded',                  $style, false],
+        [12, $wh,                                                  $style, false],
+    ];
+    $xmlRows .= buildRow($ROW++, $cells);
+}
+
+// ── BLANK ROW BEFORE SUMMARY ──────────────────────────────────────────────
+$cells=[];
+for($c=1;$c<=$COLS;$c++) $cells[] = [$c,'',0,false];
+$xmlRows .= buildRow($ROW++, $cells);
+
+// ── SUMMARY HEADER ────────────────────────────────────────────────────────
+$cells = [[1,'ATTENDANCE SUMMARY',9,false]];
+for($c=2;$c<=$COLS;$c++) $cells[] = [$c,'',9,false];
+$xmlRows .= buildRow($ROW++, $cells);
+
+// ── SUMMARY DATA ──────────────────────────────────────────────────────────
+$summaryData = [
+    ['Total Present',        $total_present],
+    ['Total Absent',         $total_absent],
+    ['Total Late',           $total_late],
+    ['Total Days',           $total_days],
+    ['Total Working Hours',  $total_h],
+    ['Avg Working Hours/Day',$avg_h],
+    ['Attendance Rate',      $rate.'%'],
+];
+foreach($summaryData as $sd){
+    $cells = [[1,$sd[0],2,false],[2,$sd[1],10,false]];
+    for($c=3;$c<=$COLS;$c++) $cells[] = [$c,'',3,false];
+    $xmlRows .= buildRow($ROW++, $cells);
+}
+
+// ── BUILD sharedStrings.xml ───────────────────────────────────────────────
+$ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'."\n";
+$ssXml .= '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+$ssXml .= ' count="'.count($strings).'" uniqueCount="'.count($strings).'">'."\n";
+foreach($strings as $s){
+    $ssXml .= '<si><t xml:space="preserve">'.xe($s).'</t></si>'."\n";
+}
+$ssXml .= '</sst>';
+
+// ── BUILD styles.xml ─────────────────────────────────────────────────────
+// Border index 0=none, 1=thin-grey
+$stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="6">
+  <font><sz val="11"/><name val="Arial"/></font>
+  <font><sz val="14"/><b/><color rgb="FFFFFFFF"/><name val="Arial"/></font>
+  <font><sz val="10"/><b/><color rgb="FF1E3A5F"/><name val="Arial"/></font>
+  <font><sz val="10"/><color rgb="FF1E3A5F"/><name val="Arial"/></font>
+  <font><sz val="10"/><b/><color rgb="FFFFFFFF"/><name val="Arial"/></font>
+  <font><sz val="10"/><b/><color rgb="FF1D4ED8"/><name val="Arial"/></font>
+</fonts>
+<fills count="9">
+  <fill><patternFill patternType="none"/></fill>
+  <fill><patternFill patternType="gray125"/></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FF1E3A5F"/></patternFill></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FFEEF2FF"/></patternFill></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FF2D6A4F"/></patternFill></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FFD1FAE5"/></patternFill></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FFFFE4E6"/></patternFill></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/></patternFill></fill>
+  <fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>
+</fills>
+<borders count="2">
+  <border><left/><right/><top/><bottom/><diagonal/></border>
+  <border>
+    <left style="thin"><color rgb="FFD1D5DB"/></left>
+    <right style="thin"><color rgb="FFD1D5DB"/></right>
+    <top style="thin"><color rgb="FFD1D5DB"/></top>
+    <bottom style="thin"><color rgb="FFD1D5DB"/></bottom>
+  </border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="12">
+  <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="3" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="5" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+</cellXfs>
+</styleSheet>';
+
+// ── BUILD worksheet/sheet1.xml ────────────────────────────────────────────
+$colWidths  = [5, 14, 26, 22, 18, 10, 14, 12, 10, 12, 12, 15];
+$colXml = '';
+foreach($colWidths as $i=>$w)
+    $colXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$w.'" customWidth="1"/>';
+
+$sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetViews><sheetView workbookViewId="0"><pane ySplit="'.$dataStartRow.'" topLeftCell="A'.($dataStartRow+1).'" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>'.$colXml.'</cols>
+<sheetData>'.$xmlRows.'</sheetData>
+</worksheet>';
+
+// ── BUILD workbook.xml ────────────────────────────────────────────────────
+$wbXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Attendance" sheetId="1" r:id="rId1"/></sheets>
+</workbook>';
+
+// ── BUILD _rels ───────────────────────────────────────────────────────────
+$wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+</Relationships>';
+
+$rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>';
+
+$contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml"  ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml"            ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml"   ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml"              ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/sharedStrings.xml"       ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+</Types>';
+
+// ── ASSEMBLE ZIP IN MEMORY ────────────────────────────────────────────────
+$tmpFile = tempnam(sys_get_temp_dir(), 'xlsx_').'.xlsx';
+
+$zip = new ZipArchive();
+if($zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true)
+    die("Cannot create xlsx file");
+
+$zip->addFromString('[Content_Types].xml',              $contentTypes);
+$zip->addFromString('_rels/.rels',                      $rootRels);
+$zip->addFromString('xl/workbook.xml',                  $wbXml);
+$zip->addFromString('xl/_rels/workbook.xml.rels',       $wbRels);
+$zip->addFromString('xl/styles.xml',                    $stylesXml);
+$zip->addFromString('xl/sharedStrings.xml',             $ssXml);
+$zip->addFromString('xl/worksheets/sheet1.xml',         $sheetXml);
+$zip->close();
+
+// ── SEND TO BROWSER ───────────────────────────────────────────────────────
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment; filename="' . $filename . '"');
-header('Content-Length: ' . filesize($out_file));
+header('Content-Disposition: attachment; filename="'.$filename.'"');
+header('Content-Length: '.filesize($tmpFile));
 header('Pragma: no-cache');
 header('Expires: 0');
 
-readfile($out_file);
-@unlink($out_file);
+readfile($tmpFile);
+@unlink($tmpFile);
 exit();
 ?>
