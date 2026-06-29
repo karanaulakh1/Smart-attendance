@@ -2,9 +2,10 @@
 /**
  * auto_absent.php
  * Called by cron-job.org every night at 23:59 IST
- * Works with TiDB + Render
- * Marks absent for ALL groups (students, teachers, employees, custom)
- * Includes in_time, out_time, working_hours columns
+ * URL: https://yoursite.onrender.com/auto_absent.php?key=smartattend2026
+ *
+ * Add ?force=1 to bypass the lock and re-run (for testing)
+ * e.g. ?key=smartattend2026&force=1
  */
 
 // ── SECRET KEY ──────────────────────────────────────────
@@ -18,106 +19,158 @@ if(!isset($_GET['key']) || $_GET['key'] !== $secret){
 // ────────────────────────────────────────────────────────
 
 include("database.php");
-
 date_default_timezone_set("Asia/Kolkata");
 
-$today = date("Y-m-d");
-$time  = "23:59:00";
+$today      = date("Y-m-d");
+$time_now   = date("H:i:s");
+$force      = isset($_GET['force']) && $_GET['force'] == '1';
+$log        = [];
+$errors     = [];
 
-// ── CHECK LOCK ──────────────────────────────────────────
-$check = mysqli_query($conn,
-    "SELECT * FROM auto_absent_log WHERE date='$today'"
-);
-
-if($check && mysqli_num_rows($check) > 0){
-    echo "Already ran today ($today). No action taken.";
-    exit();
+// ── CHECK LOCK (skip if ?force=1) ───────────────────────
+if(!$force){
+    $check = $conn->query("SELECT id FROM auto_absent_log WHERE date='$today'");
+    if($check && $check->num_rows > 0){
+        echo "Already ran today ($today). Use ?force=1 to re-run.\n";
+        exit();
+    }
 }
 // ────────────────────────────────────────────────────────
 
-// ── LOAD ALL GROUPS ─────────────────────────────────────
-$groups = mysqli_query($conn, "SELECT * FROM groups_registry ORDER BY id ASC");
-
-if(!$groups){
-    echo "Error loading groups: " . mysqli_error($conn);
-    exit();
+// ── CHECK groups_registry EXISTS ────────────────────────
+$tbl_check = $conn->query("SHOW TABLES LIKE 'groups_registry'");
+if(!$tbl_check || $tbl_check->num_rows === 0){
+    die("ERROR: groups_registry table not found. Run the SQL setup first.\n");
 }
+// ────────────────────────────────────────────────────────
+
+// ── LOAD ALL GROUPS ──────────────────────────────────────
+$groups_result = $conn->query("SELECT * FROM groups_registry ORDER BY id ASC");
+if(!$groups_result){
+    die("ERROR loading groups: " . $conn->error . "\n");
+}
+
+$groups = [];
+while($g = $groups_result->fetch_assoc()){
+    $groups[] = $g;
+}
+
+if(count($groups) === 0){
+    die("ERROR: No groups found in groups_registry.\n");
+}
+
+$log[] = "Found " . count($groups) . " group(s): " .
+         implode(", ", array_column($groups, 'group_name'));
 // ────────────────────────────────────────────────────────
 
 $total_marked = 0;
-$log          = [];
 
-while($group = mysqli_fetch_assoc($groups)){
+foreach($groups as $group){
 
-    $member_table = $group['table_name'];
-    $att_table    = $group['attendance_table'];
-    $group_name   = $group['group_name'];
+    $mt         = $group['table_name'];
+    $at         = $group['attendance_table'];
+    $gname      = $group['group_name'];
 
-    // Check if this attendance table has in_time/out_time columns
-    $col_check = mysqli_query($conn,
-        "SHOW COLUMNS FROM `$att_table` LIKE 'in_time'"
-    );
-    $has_inout = ($col_check && mysqli_num_rows($col_check) > 0);
+    // ── CHECK TABLES EXIST ───────────────────────────────
+    $mt_check = $conn->query("SHOW TABLES LIKE '$mt'");
+    $at_check = $conn->query("SHOW TABLES LIKE '$at'");
 
-    // Build insert based on whether columns exist
+    if(!$mt_check || $mt_check->num_rows === 0){
+        $errors[] = "[$gname] SKIP — member table '$mt' not found";
+        continue;
+    }
+    if(!$at_check || $at_check->num_rows === 0){
+        $errors[] = "[$gname] SKIP — attendance table '$at' not found";
+        continue;
+    }
+
+    // ── COUNT TOTAL MEMBERS ──────────────────────────────
+    $total_q = $conn->query("SELECT COUNT(*) as c FROM `$mt`");
+    $total_members = $total_q ? (int)$total_q->fetch_assoc()['c'] : 0;
+
+    if($total_members === 0){
+        $log[] = "[$gname] No members — skipped";
+        continue;
+    }
+
+    // ── CHECK IN/OUT COLUMNS ─────────────────────────────
+    $col_check = $conn->query("SHOW COLUMNS FROM `$at` LIKE 'in_time'");
+    $has_inout = ($col_check && $col_check->num_rows > 0);
+
+    // ── GET MEMBERS WHO ALREADY HAVE A RECORD TODAY ──────
+    // Using LEFT JOIN instead of NOT IN to be TiDB-safe
     if($has_inout){
-        $result = mysqli_query($conn, "
-            INSERT INTO `$att_table`
+        $sql = "
+            INSERT INTO `$at`
                 (student_id, course, status, date, time, in_time, out_time, working_hours)
             SELECT
                 m.student_id,
                 m.course,
                 'Absent',
                 '$today',
-                '$time',
+                '$time_now',
                 NULL,
                 NULL,
                 '00:00'
-            FROM `$member_table` m
-            WHERE m.student_id NOT IN (
-                SELECT a.student_id
-                FROM `$att_table` a
-                WHERE a.date = '$today'
-            )
-        ");
+            FROM `$mt` m
+            LEFT JOIN `$at` a
+                ON a.student_id = m.student_id
+                AND a.date = '$today'
+            WHERE a.id IS NULL
+        ";
     } else {
-        $result = mysqli_query($conn, "
-            INSERT INTO `$att_table`
+        $sql = "
+            INSERT INTO `$at`
                 (student_id, course, status, date, time)
             SELECT
                 m.student_id,
                 m.course,
                 'Absent',
                 '$today',
-                '$time'
-            FROM `$member_table` m
-            WHERE m.student_id NOT IN (
-                SELECT a.student_id
-                FROM `$att_table` a
-                WHERE a.date = '$today'
-            )
-        ");
+                '$time_now'
+            FROM `$mt` m
+            LEFT JOIN `$at` a
+                ON a.student_id = m.student_id
+                AND a.date = '$today'
+            WHERE a.id IS NULL
+        ";
     }
+
+    $result = $conn->query($sql);
 
     if(!$result){
-        $log[] = "[$group_name] ERROR: " . mysqli_error($conn);
+        $errors[] = "[$gname] SQL ERROR: " . $conn->error;
     } else {
-        $count = mysqli_affected_rows($conn);
-        $total_marked += $count;
-        $log[] = "[$group_name] $count member(s) marked Absent.";
+        $marked = $conn->affected_rows;
+        $total_marked += $marked;
+        $already = $total_members - $marked;
+        $log[] = "[$gname] $marked absent" .
+                 ($already > 0 ? ", $already already had record" : "") .
+                 " (total members: $total_members)" .
+                 ($has_inout ? " [IN/OUT]" : "");
     }
 }
-
-// ── WRITE LOCK ──────────────────────────────────────────
-mysqli_query($conn,
-    "INSERT INTO auto_absent_log (date) VALUES ('$today')"
-);
 // ────────────────────────────────────────────────────────
 
-// ── OUTPUT ──────────────────────────────────────────────
-echo "Auto-absent done for $today.\n";
-echo "Total marked: $total_marked\n\n";
-foreach($log as $line){
-    echo $line . "\n";
+// ── WRITE LOCK ───────────────────────────────────────────
+// Delete old lock first if force=1
+if($force){
+    $conn->query("DELETE FROM auto_absent_log WHERE date='$today'");
 }
+$conn->query("INSERT INTO auto_absent_log (date) VALUES ('$today')");
+// ────────────────────────────────────────────────────────
+
+// ── OUTPUT ───────────────────────────────────────────────
+echo "=== AUTO ABSENT REPORT ===\n";
+echo "Date    : $today\n";
+echo "Time    : $time_now\n";
+echo "Forced  : " . ($force ? "YES" : "NO") . "\n";
+echo "Marked  : $total_marked member(s) absent\n";
+echo "\n--- GROUPS ---\n";
+foreach($log as $line)    echo $line . "\n";
+if(count($errors) > 0){
+    echo "\n--- ERRORS ---\n";
+    foreach($errors as $e) echo $e . "\n";
+}
+echo "\nDone.\n";
 ?>
