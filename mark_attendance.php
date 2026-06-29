@@ -29,7 +29,7 @@ if(!isset($_GET['fingerprint_id'])){
 
 $fingerprint_id = $_GET['fingerprint_id'];
 $date           = date("Y-m-d");
-$time_now       = date("h:i A");   // e.g. 09:15 AM
+$time_now       = date("h:i:s");   // e.g. 09:15 AM
 $now_dt         = date("Y-m-d H:i:s");
 
 // ── UPDATE ESP32 LAST PING ──────────────────────────────────────────────
@@ -95,7 +95,7 @@ if(!$existing){
 if($existing['in_time'] && empty($existing['out_time'])){
 
     // Calculate working hours
-    $in_obj  = DateTime::createFromFormat("h:i A", $existing['in_time']);
+    $in_obj  = DateTime::createFromFormat("h:i:s", $existing['in_time']);
     $out_obj = new DateTime();
 
     if($in_obj && $out_obj && $out_obj > $in_obj){
