@@ -219,7 +219,7 @@ tbody tr:hover td{ background:rgba(255,255,255,.025); }
                     <td><span class="fp-badge <?php echo $hasFp?'fp-ok':'fp-none'; ?>"><?php echo $hasFp?htmlspecialchars($row['fingerprint_id']):'Not enrolled'; ?></span></td>
                     <td>
                         <div class="action">
-                            <a href="save_enroll.php?student_id=<?php echo $row['student_id']; ?>&group=<?php echo $active_group; ?>" class="act-btn btn-enroll">Enroll</a>
+                            <a href="enroll.php?action=request&student_id=<?php echo $row['student_id']; ?>&group=<?php echo $active_group; ?>" class="act-btn btn-enroll" onclick="return confirm('Place the member\'s finger on the ESP32 sensor right after clicking OK. The device will pick up this request automatically.');" target="_blank">Enroll</a>
                             <a href="manage_members.php?group=<?php echo $active_group; ?>&edit=<?php echo $row['id']; ?>" class="act-btn btn-edit">Edit</a>
                             <a href="manage_members.php?group=<?php echo $active_group; ?>&delete=<?php echo $row['id']; ?>" class="act-btn btn-delete" onclick="return confirmDelete('<?php echo htmlspecialchars($row['name']); ?>')">Delete</a>
                         </div>
