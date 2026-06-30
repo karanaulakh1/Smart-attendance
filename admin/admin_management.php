@@ -582,7 +582,7 @@ tbody tr:hover td{ background:rgba(255,255,255,.02); }
                                     <?php echo htmlspecialchars($row['username']); ?>
                                     <?php if($isSelf){ ?><span class="you-tag">YOU</span><?php } ?>
                                 </span>
-                                <span class="admin-email"><?php echo htmlspecialchars($row['email']); ?></span>
+                                <span class="admin-email"><?php echo htmlspecialchars($row['email'??'']); ?></span>
                             </div>
                         </div>
                     </td>
