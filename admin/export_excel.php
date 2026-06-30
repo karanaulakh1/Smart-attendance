@@ -172,7 +172,7 @@ $xml .= fillRow($ROW++, 'SMART ATTENDANCE SYSTEM — Export Report', 1, 1, $NC);
 
 // Rows 2-7 — Meta
 $meta = [
-    ['Generated On',  date("d M Y, h:i A")],
+    ['Generated On',  date("d M Y, h:i:s")],
     ['Group',         $group_name],
     ['Course / Dept', $course ?: 'All'],
     ['Member ID',     $student_id ?: 'All'],
