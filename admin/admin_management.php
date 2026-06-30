@@ -570,28 +570,30 @@ tbody tr:hover td{ background:rgba(255,255,255,.02); }
                     $initial = strtoupper(substr($row['username'], 0, 1));
                     $isSuper = $row['role'] == 'superadmin';
                 ?>
-                <tr>
-                    <td class="id-cell"><?php echo str_pad($i++, 2, '0', STR_PAD_LEFT); ?></td>
-                    <td>
-                        <div class="admin-cell">
-                            <div class="admin-avatar <?php echo $isSuper ? 'sa' : ''; ?>">
-                                <?php echo $initial; ?>
-                            </div>
-                            <div class="admin-info">
-                                <span class="admin-name">
-                                    <?php echo htmlspecialchars($row['username']); ?>
-                                    <?php if($isSelf){ ?><span class="you-tag">YOU</span><?php } ?>
-                                </span>
-                                <span class="admin-email"><?php echo htmlspecialchars($row['email'??'']); ?></span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="role-badge <?php echo $isSuper ? 'role-super' : 'role-admin'; ?>">
-                            <?php echo $isSuper ? 'Super Admin' : 'Admin'; ?>
-                        </span>
-                    </td>
-                    <td>
+               <tr>
+    <td class="id-cell"><?php echo str_pad($i++, 2, '0', STR_PAD_LEFT); ?></td>
+    <td>
+        <div class="admin-cell">
+            <div class="admin-avatar <?php echo $isSuper ? 'sa' : ''; ?>">
+                <?php echo $initial; ?>
+            </div>
+            <div class="admin-info">
+                <span class="admin-name">
+                    <?php echo htmlspecialchars($row['username'] ?? ''); ?>
+                    <?php if($isSelf){ ?><span class="you-tag">YOU</span><?php } ?>
+                </span>
+                <span class="admin-email">
+                    <?php echo htmlspecialchars($row['email'] ?? ''); ?>
+                </span>
+            </div>
+        </div>
+    </td>
+    <td>
+        <span class="role-badge <?php echo $isSuper ? 'role-super' : 'role-admin'; ?>">
+            <?php echo $isSuper ? 'Super Admin' : 'Admin'; ?>
+        </span>
+    </td>
+    <td>
                         <?php if(!$isSelf): ?>
                         <a class="btn-del"
                            href="?delete=<?php echo $row['id']; ?>"
