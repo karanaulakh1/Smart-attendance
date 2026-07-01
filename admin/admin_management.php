@@ -458,10 +458,10 @@ tbody tr:hover td{ background:rgba(255,255,255,.02); }
     <div class="logo">📘 Smart<br>Attendance</div>
     <div class="nav-section">Menu</div>
     <a href="admin_dashboard.php">🏠 Dashboard</a>
-    <a href="add_member.php" class="active">➕ Add Member</a>
+    <a href="add_member.php">➕ Add Member</a>
     <a href="manage_members.php">👥 Manage Members</a>
     <a href="attendance.php">🗓️ Attendance</a>
-    <?php if($admin_role=='superadmin'){ ?><a href="admin_management.php">👮 Admin Management</a><?php } ?>
+    <?php if($admin_role=='superadmin'){ ?><a href="admin_management.php" class="active">👮 Admin Management</a><?php } ?>
     <div class="spacer"></div>
     <div class="nav-section">Account</div>
     <a href="javascript:void(0);" onclick="confirmLogout()" class="logout">🚪 Logout</a>
